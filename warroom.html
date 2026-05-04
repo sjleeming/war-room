@@ -219,6 +219,70 @@
       #home-grid { grid-template-columns: 1fr 1fr; }
       #home-clock { font-size: 36px; }
     }
+
+    /* ── Morning Check-in Overlay ── */
+    #checkin-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    #checkin-overlay.visible { display: flex; }
+    #checkin-box {
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 28px 32px;
+      max-width: 480px;
+      width: 90%;
+      border: 1px solid var(--border2);
+    }
+    #checkin-box h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    #checkin-box p {
+      font-size: 13px;
+      color: var(--text3);
+      margin-bottom: 20px;
+    }
+    .checkin-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .checkin-item:last-child { border-bottom: none; }
+    .checkin-item-text {
+      flex: 1;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .checkin-item-text.priority { color: var(--danger); }
+    .btn-carryover {
+      background: var(--blue);
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 5px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-dismiss-ci {
+      background: transparent;
+      color: var(--text3);
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border2);
+      font-size: 12px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -251,6 +315,15 @@
   <div class="section" id="section-notes"><h2 class="section-heading">Notes</h2></div>
   <div class="section" id="section-habits"><h2 class="section-heading">Habits</h2></div>
   <div class="section" id="section-links"><h2 class="section-heading">Links</h2></div>
+
+  <!-- Morning Check-in Overlay -->
+  <div id="checkin-overlay">
+    <div id="checkin-box">
+      <h2>☀️ Good morning</h2>
+      <p>You had unfinished tasks from yesterday. Deal with each one before you start today.</p>
+      <div id="checkin-list"></div>
+    </div>
+  </div>
 
   <script>
     /* ══════════════════════════════════════
@@ -303,6 +376,74 @@
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => navigate(tab.dataset.tab));
     });
+
+    /* ══════════════════════════════════════
+       MORNING CHECK-IN
+    ══════════════════════════════════════ */
+
+    function todayStr() {
+      return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    }
+
+    function yesterdayStr() {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function runMorningCheckin() {
+      const lastOpen = Store.get('wr_lastopen', null);
+      const today    = todayStr();
+      Store.set('wr_lastopen', today);
+      if (lastOpen === today) return; // already opened today
+
+      const todos     = Store.get('wr_todos', []);
+      const yesterday = yesterdayStr();
+      const leftover  = todos.filter(t =>
+        !t.done && t.createdDate && t.createdDate <= yesterday
+      );
+      if (leftover.length === 0) return;
+
+      const overlay = document.getElementById('checkin-overlay');
+      const list    = document.getElementById('checkin-list');
+      overlay.classList.add('visible');
+
+      function renderCheckin() {
+        const remaining = Store.get('wr_todos', []).filter(t =>
+          !t.done && t.createdDate && t.createdDate <= yesterday
+        );
+        if (remaining.length === 0) {
+          overlay.classList.remove('visible');
+          return;
+        }
+        list.innerHTML = remaining.map(t => `
+          <div class="checkin-item" id="ci-${t.id}">
+            <span class="checkin-item-text${t.priority ? ' priority' : ''}">${escHtml(t.text)}</span>
+            <button class="btn-carryover" onclick="checkinCarryover('${t.id}')">Carry over</button>
+            <button class="btn-dismiss-ci" onclick="checkinDismiss('${t.id}')">Dismiss</button>
+          </div>
+        `).join('');
+      }
+
+      window.checkinCarryover = function(id) {
+        const todos = Store.get('wr_todos', []);
+        const idx   = todos.findIndex(t => t.id === id);
+        if (idx !== -1) { todos[idx].createdDate = today; Store.set('wr_todos', todos); }
+        renderCheckin();
+      };
+
+      window.checkinDismiss = function(id) {
+        const todos = Store.get('wr_todos', []).filter(t => t.id !== id);
+        Store.set('wr_todos', todos);
+        renderCheckin();
+      };
+
+      renderCheckin();
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
 
     /* ══════════════════════════════════════
        HOME — clock, greeting, summary cards
@@ -392,6 +533,7 @@
     /* ══════════════════════════════════════
        INIT
     ══════════════════════════════════════ */
+    runMorningCheckin();
     navigate('home');
     renderHome();
     setInterval(updateClock, 1000);
