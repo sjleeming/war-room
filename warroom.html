@@ -656,7 +656,8 @@
       section.classList.add('active');
       tabEl.classList.add('active');
       currentTab = tab;
-      if (tab !== 'home') renderSection(tab);
+      if (tab === 'home') renderHome();
+      else renderSection(tab);
     }
 
     function renderSection(tab) {
@@ -1162,7 +1163,7 @@
           </div>
           <div class="home-card-body">
             ${c.items.length
-              ? c.items.map(i => `<div class="home-card-item${i.urgent ? ' urgent' : ''}">${i.text}</div>`).join('')
+              ? c.items.map(i => `<div class="home-card-item${i.urgent ? ' urgent' : ''}">${escHtml(i.text)}</div>`).join('')
               : '<div class="home-card-empty">Nothing yet</div>'}
           </div>
         </div>
@@ -1321,7 +1322,7 @@
     runMorningCheckin();
     navigate('home');
     renderHome();
-    setInterval(updateClock, 1000);
+    setInterval(() => { if (currentTab === 'home') updateClock(); }, 1000);
     setInterval(() => { if (currentTab === 'home') renderHome(); }, 60000);
   </script>
 </body>
