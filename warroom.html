@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>War Room</title>
+  <meta name="description" content="Personal daily war room — tasks, habits, calendar, notes, watchlist, links." />
+  <meta name="theme-color" content="#111318" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -151,6 +154,12 @@
     @media (max-width: 600px) {
       .tab { padding: 8px 10px; font-size: 12px; }
       .section { padding: 16px 12px; }
+      #notes-grid { grid-template-columns: 1fr; }
+      #home-grid  { grid-template-columns: 1fr 1fr; }
+      #links-add-row, #watch-add-row { flex-direction: column; }
+      #tasks-add-row .btn { padding: 8px 10px; }
+      #cal-grid { gap: 2px; }
+      .cal-day { font-size: 11px; border-radius: 5px; }
     }
 
     /* ── Home ── */
