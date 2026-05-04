@@ -177,7 +177,61 @@
   <div class="section" id="section-links"><h2 class="section-heading">Links</h2></div>
 
   <script>
-    // placeholder — JS added in later tasks
+    /* ══════════════════════════════════════
+       STORE — localStorage helpers
+    ══════════════════════════════════════ */
+    const Store = {
+      get(key, fallback = null) {
+        try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+        catch { return fallback; }
+      },
+      set(key, val) {
+        try { localStorage.setItem(key, JSON.stringify(val)); }
+        catch (e) { console.warn('Store.set failed', e); }
+      }
+    };
+
+    /* ══════════════════════════════════════
+       NAVIGATION
+    ══════════════════════════════════════ */
+    let currentTab = 'home';
+
+    function navigate(tab) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      const section = document.getElementById(`section-${tab}`);
+      const tabEl   = document.querySelector(`.tab[data-tab="${tab}"]`);
+      if (!section || !tabEl) return;
+      section.classList.add('active');
+      tabEl.classList.add('active');
+      currentTab = tab;
+      if (tab !== 'home') renderSection(tab);
+    }
+
+    function renderSection(tab) {
+      const fns = { tasks: renderTasks, watchlist: renderWatchlist,
+                    calendar: renderCalendar, notes: renderNotes,
+                    habits: renderHabits, links: renderLinks };
+      if (fns[tab]) fns[tab]();
+    }
+
+    // Stub render functions — replaced section by section in later tasks
+    function renderTasks()     {}
+    function renderWatchlist() {}
+    function renderCalendar()  {}
+    function renderNotes()     {}
+    function renderHabits()    {}
+    function renderLinks()     {}
+
+    // Wire tab clicks
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => navigate(tab.dataset.tab));
+    });
+
+    /* ══════════════════════════════════════
+       INIT
+    ══════════════════════════════════════ */
+    navigate('home');
   </script>
 </body>
 </html>
