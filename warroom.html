@@ -152,6 +152,73 @@
       .tab { padding: 8px 10px; font-size: 12px; }
       .section { padding: 16px 12px; }
     }
+
+    /* ── Home ── */
+    #home-header {
+      margin-bottom: 28px;
+    }
+    #home-clock {
+      font-family: 'Syne', sans-serif;
+      font-size: 48px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    #home-date {
+      font-size: 14px;
+      color: var(--text3);
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    #home-greeting {
+      font-size: 16px;
+      color: var(--text2);
+      font-weight: 500;
+    }
+    #home-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+    .home-card {
+      background: var(--surface);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .home-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+    }
+    .home-card-header {
+      padding: 8px 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .home-card-body {
+      padding: 10px 12px 14px;
+    }
+    .home-card-item {
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .home-card-item.urgent { color: var(--danger); }
+    .home-card-empty { font-size: 12px; color: var(--text3); font-style: italic; }
+
+    @media (max-width: 600px) {
+      #home-grid { grid-template-columns: 1fr 1fr; }
+      #home-clock { font-size: 36px; }
+    }
   </style>
 </head>
 <body>
@@ -168,7 +235,16 @@
   </nav>
 
   <!-- Sections (shells — content added in later tasks) -->
-  <div class="section active" id="section-home"></div>
+  <div class="section active" id="section-home">
+    <div id="home-header">
+      <div id="home-clock">00:00:00</div>
+      <div id="home-date"></div>
+      <div id="home-greeting"></div>
+    </div>
+    <div id="home-grid">
+      <!-- Cards injected by renderHome() -->
+    </div>
+  </div>
   <div class="section" id="section-tasks"><h2 class="section-heading">Tasks</h2></div>
   <div class="section" id="section-watchlist"><h2 class="section-heading">Watchlist</h2></div>
   <div class="section" id="section-calendar"><h2 class="section-heading">Calendar</h2></div>
@@ -229,9 +305,97 @@
     });
 
     /* ══════════════════════════════════════
+       HOME — clock, greeting, summary cards
+    ══════════════════════════════════════ */
+
+    const HOLIDAYS = [
+      { month: 1,  day: 1,  msg: "Happy New Year! 🎉" },
+      { month: 2,  day: 14, msg: "Happy Valentine's Day 💕" },
+      { month: 3,  day: 17, msg: "Happy St Patrick's Day 🍀" },
+      { month: 10, day: 31, msg: "Happy Halloween 🎃" },
+      { month: 11, day: 5,  msg: "Remember, remember — Bonfire Night 🔥" },
+      { month: 12, day: 24, msg: "Christmas Eve — almost time! 🎄" },
+      { month: 12, day: 25, msg: "Merry Christmas! 🎁" },
+      { month: 12, day: 26, msg: "Happy Boxing Day! 🥊" },
+      { month: 12, day: 31, msg: "New Year's Eve — one more day! 🥂" },
+    ];
+
+    const DAY_MSGS = [
+      "Sunday — enjoy the rest.",
+      "Monday. Let's go.",
+      "Tuesday — build momentum.",
+      "Wednesday — halfway there.",
+      "Thursday — nearly done.",
+      "Happy Friday — almost the weekend.",
+      "Saturday — make it count.",
+    ];
+
+    function getGreeting() {
+      const now  = new Date();
+      const m    = now.getMonth() + 1;
+      const d    = now.getDate();
+      const h    = now.getHours();
+      const holiday = HOLIDAYS.find(hd => hd.month === m && hd.day === d);
+      if (holiday) return holiday.msg;
+      if (h < 12)  return `Good morning. ${DAY_MSGS[now.getDay()]}`;
+      if (h < 17)  return `Good afternoon. ${DAY_MSGS[now.getDay()]}`;
+      return `Good evening. ${DAY_MSGS[now.getDay()]}`;
+    }
+
+    function formatDate(date) {
+      return date.toLocaleDateString('en-GB', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      });
+    }
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('home-clock').textContent =
+        now.toLocaleTimeString('en-GB');
+      document.getElementById('home-date').textContent = formatDate(now);
+      document.getElementById('home-greeting').textContent = getGreeting();
+    }
+
+    function renderHome() {
+      updateClock();
+      const grid = document.getElementById('home-grid');
+      const cards = [
+        { tab: 'tasks',     label: 'Tasks',     color: 'var(--blue)',   items: getTaskSummary()     },
+        { tab: 'watchlist', label: 'Watchlist',  color: 'var(--purple)', items: getWatchSummary()    },
+        { tab: 'calendar',  label: 'Calendar',   color: 'var(--teal)',   items: getCalSummary()      },
+        { tab: 'notes',     label: 'Notes',      color: 'var(--amber)',  items: getNotesSummary()    },
+        { tab: 'habits',    label: 'Habits',     color: 'var(--green)',  items: getHabitsSummary()   },
+        { tab: 'links',     label: 'Links',      color: 'var(--coral)',  items: getLinksSummary()    },
+      ];
+      grid.innerHTML = cards.map(c => `
+        <div class="home-card" onclick="navigate('${c.tab}')">
+          <div class="home-card-header" style="background:${c.color}22;color:${c.color};border-left:3px solid ${c.color}">
+            ${c.label}
+          </div>
+          <div class="home-card-body">
+            ${c.items.length
+              ? c.items.map(i => `<div class="home-card-item${i.urgent ? ' urgent' : ''}">${i.text}</div>`).join('')
+              : '<div class="home-card-empty">Nothing yet</div>'}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Summary data providers — return [{text, urgent}] — stubs replaced by section tasks
+    function getTaskSummary()    { return []; }
+    function getWatchSummary()   { return []; }
+    function getCalSummary()     { return []; }
+    function getNotesSummary()   { return []; }
+    function getHabitsSummary()  { return []; }
+    function getLinksSummary()   { return []; }
+
+    /* ══════════════════════════════════════
        INIT
     ══════════════════════════════════════ */
     navigate('home');
+    renderHome();
+    setInterval(updateClock, 1000);
+    setInterval(() => { if (currentTab === 'home') renderHome(); }, 60000);
   </script>
 </body>
 </html>
