@@ -412,6 +412,40 @@
     .cal-event-text { flex: 1; font-size: 13px; }
     .cal-event-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 15px; }
     .cal-event-del:hover { color: var(--danger); }
+
+    /* ── Notes ── */
+    #notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .note-card {
+      background: var(--surface); border-radius: 10px;
+      padding: 14px; cursor: pointer; position: relative;
+      border: 1px solid var(--border); transition: border-color 0.15s, transform 0.15s;
+      min-height: 110px;
+    }
+    .note-card:hover { border-color: var(--amber); transform: translateY(-2px); }
+    .note-card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--amber); }
+    .note-card-preview { font-size: 12px; color: var(--text3); line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+    .note-card-del { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; opacity: 0; transition: opacity 0.15s; }
+    .note-card:hover .note-card-del { opacity: 1; }
+    .note-card-del:hover { color: var(--danger); }
+    #notes-new-btn { margin-bottom: 16px; }
+    /* Note editor */
+    #note-editor { display: none; }
+    #note-editor.visible { display: block; }
+    #notes-grid-view.hidden { display: none; }
+    #note-back { margin-bottom: 14px; }
+    #note-title-input {
+      font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800;
+      background: none; border: none; border-bottom: 2px solid var(--amber);
+      color: var(--text); width: 100%; outline: none; padding-bottom: 6px; margin-bottom: 14px;
+    }
+    #note-body-input {
+      width: 100%; min-height: 320px; background: var(--surface);
+      border: 1px solid var(--border2); border-radius: 8px;
+      color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px; line-height: 1.7; padding: 12px; outline: none; resize: vertical;
+    }
+    #note-body-input:focus { border-color: var(--amber); }
+    #note-autosave { font-size: 11px; color: var(--text3); margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -491,7 +525,22 @@
       <div id="cal-event-list"></div>
     </div>
   </div>
-  <div class="section" id="section-notes"><h2 class="section-heading">Notes</h2></div>
+  <div class="section" id="section-notes">
+    <!-- Grid view -->
+    <div id="notes-grid-view">
+      <h2 class="section-heading">Notes</h2>
+      <button class="btn btn-primary" id="notes-new-btn" onclick="newNote()">+ New Note</button>
+      <div id="notes-grid"></div>
+      <p id="notes-empty" style="color:var(--text3);display:none">No notes yet.</p>
+    </div>
+    <!-- Editor view -->
+    <div id="note-editor">
+      <button class="btn btn-ghost" id="note-back" onclick="closeNote()">← Back</button>
+      <input id="note-title-input" placeholder="Note title…" />
+      <textarea id="note-body-input" placeholder="Start writing…"></textarea>
+      <div id="note-autosave">Auto-saved</div>
+    </div>
+  </div>
   <div class="section" id="section-habits"><h2 class="section-heading">Habits</h2></div>
   <div class="section" id="section-links"><h2 class="section-heading">Links</h2></div>
 
@@ -544,7 +593,6 @@
     }
 
     // Stub render functions — replaced section by section in later tasks
-    function renderNotes()     {}
     function renderHabits()    {}
     function renderLinks()     {}
 
@@ -824,6 +872,89 @@
     }
 
     /* ══════════════════════════════════════
+       NOTES
+    ══════════════════════════════════════ */
+
+    let editingNoteId = null;
+    let noteAutoSaveTimer = null;
+
+    function renderNotes() {
+      const notes = Store.get('wr_notes', []);
+      const grid  = document.getElementById('notes-grid');
+      const empty = document.getElementById('notes-empty');
+      document.getElementById('notes-grid-view').classList.remove('hidden');
+      document.getElementById('note-editor').classList.remove('visible');
+      if (!notes.length) { grid.innerHTML = ''; empty.style.display = ''; return; }
+      empty.style.display = 'none';
+      grid.innerHTML = notes
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .map(n => `
+          <div class="note-card" onclick="openNote('${n.id}')">
+            <div class="note-card-title">${escHtml(n.title || 'Untitled')}</div>
+            <div class="note-card-preview">${escHtml(n.content || '')}</div>
+            <button class="note-card-del" onclick="deleteNote(event,'${n.id}')">×</button>
+          </div>`).join('');
+    }
+
+    function openNote(id) {
+      editingNoteId = id;
+      const note = Store.get('wr_notes', []).find(n => n.id === id) || { title:'', content:'' };
+      document.getElementById('note-title-input').value = note.title;
+      document.getElementById('note-body-input').value  = note.content;
+      document.getElementById('notes-grid-view').classList.add('hidden');
+      document.getElementById('note-editor').classList.add('visible');
+      document.getElementById('note-autosave').textContent = 'Auto-saved';
+    }
+
+    function newNote() {
+      const note = { id: uid(), title: '', content: '', updatedAt: Date.now() };
+      const notes = Store.get('wr_notes', []);
+      notes.unshift(note);
+      Store.set('wr_notes', notes);
+      openNote(note.id);
+    }
+
+    function saveNote() {
+      const notes = Store.get('wr_notes', []);
+      const idx   = notes.findIndex(n => n.id === editingNoteId);
+      if (idx === -1) return;
+      notes[idx].title   = document.getElementById('note-title-input').value;
+      notes[idx].content = document.getElementById('note-body-input').value;
+      notes[idx].updatedAt = Date.now();
+      Store.set('wr_notes', notes);
+      document.getElementById('note-autosave').textContent = 'Saved ✓';
+    }
+
+    function closeNote() {
+      saveNote();
+      editingNoteId = null;
+      renderNotes();
+    }
+
+    function deleteNote(e, id) {
+      e.stopPropagation();
+      Store.set('wr_notes', Store.get('wr_notes', []).filter(n => n.id !== id));
+      renderNotes();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      ['note-title-input', 'note-body-input'].forEach(elId => {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        el.addEventListener('input', () => {
+          clearTimeout(noteAutoSaveTimer);
+          document.getElementById('note-autosave').textContent = 'Saving…';
+          noteAutoSaveTimer = setTimeout(saveNote, 800);
+        });
+      });
+    });
+
+    function getNotesSummary() {
+      const notes = Store.get('wr_notes', []).sort((a,b) => b.updatedAt - a.updatedAt);
+      return notes.slice(0,2).map(n => ({ text: n.title || 'Untitled', urgent: false }));
+    }
+
+    /* ══════════════════════════════════════
        MORNING CHECK-IN
     ══════════════════════════════════════ */
 
@@ -969,7 +1100,6 @@
     }
 
     // Summary data providers — return [{text, urgent}] — stubs replaced by section tasks
-    function getNotesSummary()   { return []; }
     function getHabitsSummary()  { return []; }
     function getLinksSummary()   { return []; }
 
