@@ -473,6 +473,34 @@
     }
     #note-body-input:focus { border-color: var(--amber); }
     #note-autosave { font-size: 11px; color: var(--text3); margin-top: 8px; }
+
+    /* ── Links ── */
+    #links-add-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    #links-add-row .input { flex: 2; min-width: 160px; }
+    .links-category { margin-bottom: 20px; }
+    .links-cat-label {
+      font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700;
+      color: var(--coral); letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .link-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; background: var(--surface);
+      border-radius: 8px; margin-bottom: 5px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .link-item:hover { background: var(--surface2); }
+    .link-avatar {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: var(--coral); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+    .link-info { flex: 1; overflow: hidden; }
+    .link-label { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .link-url { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .link-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; }
+    .link-del:hover { color: var(--danger); }
   </style>
 </head>
 <body>
@@ -578,7 +606,17 @@
     <div id="habits-list"></div>
     <p id="habits-empty" style="color:var(--text3);display:none">No habits added yet.</p>
   </div>
-  <div class="section" id="section-links"><h2 class="section-heading">Links</h2></div>
+  <div class="section" id="section-links">
+    <h2 class="section-heading">Links</h2>
+    <div id="links-add-row">
+      <input class="input" id="link-url-input"   placeholder="URL…" />
+      <input class="input" id="link-label-input" placeholder="Label (optional)" />
+      <input class="input" id="link-cat-input"   placeholder="Category (optional)" />
+      <button class="btn btn-primary" onclick="addLink()">Add</button>
+    </div>
+    <div id="links-list"></div>
+    <p id="links-empty" style="color:var(--text3);display:none">No links saved yet.</p>
+  </div>
 
   <!-- Morning Check-in Overlay -->
   <div id="checkin-overlay">
@@ -627,9 +665,6 @@
                     habits: renderHabits, links: renderLinks };
       if (fns[tab]) fns[tab]();
     }
-
-    // Stub render functions — replaced section by section in later tasks
-    function renderLinks()     {}
 
     // Wire tab clicks
     document.querySelectorAll('.tab').forEach(tab => {
@@ -1134,9 +1169,6 @@
       `).join('');
     }
 
-    // Summary data providers — return [{text, urgent}] — stubs replaced by section tasks
-    function getLinksSummary()   { return []; }
-
     /* ══════════════════════════════════════
        HABITS
     ══════════════════════════════════════ */
@@ -1218,6 +1250,69 @@
       const done        = (completions[today] || []).length;
       if (!habits.length) return [{ text: 'No habits set', urgent: false }];
       return [{ text: `${done} of ${habits.length} done today`, urgent: false }];
+    }
+
+    /* ══════════════════════════════════════
+       LINKS
+    ══════════════════════════════════════ */
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const li = document.getElementById('link-url-input');
+      if (li) li.addEventListener('keydown', e => { if (e.key === 'Enter') addLink(); });
+    });
+
+    function addLink() {
+      let url    = document.getElementById('link-url-input').value.trim();
+      const label  = document.getElementById('link-label-input').value.trim();
+      const cat    = document.getElementById('link-cat-input').value.trim() || 'General';
+      if (!url) return;
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      const links = Store.get('wr_links', []);
+      links.push({ id: uid(), url, title: label || url, category: cat });
+      Store.set('wr_links', links);
+      document.getElementById('link-url-input').value   = '';
+      document.getElementById('link-label-input').value = '';
+      document.getElementById('link-cat-input').value   = '';
+      renderLinks();
+    }
+
+    function deleteLink(id) {
+      Store.set('wr_links', Store.get('wr_links', []).filter(l => l.id !== id));
+      renderLinks();
+    }
+
+    function renderLinks() {
+      const links = Store.get('wr_links', []);
+      const list  = document.getElementById('links-list');
+      const empty = document.getElementById('links-empty');
+      if (!links.length) { list.innerHTML = ''; empty.style.display = ''; return; }
+      empty.style.display = 'none';
+      const groups = {};
+      links.forEach(l => { if (!groups[l.category]) groups[l.category] = []; groups[l.category].push(l); });
+      list.innerHTML = Object.entries(groups).map(([cat, items]) => `
+        <div class="links-category">
+          <div class="links-cat-label">${escHtml(cat)}</div>
+          ${items.map(l => {
+            const initial = (l.title || l.url)[0].toUpperCase();
+            return `
+              <div class="link-item" onclick="window.open('${l.url}','_blank')">
+                <div class="link-avatar">${escHtml(initial)}</div>
+                <div class="link-info">
+                  <div class="link-label">${escHtml(l.title)}</div>
+                  <div class="link-url">${escHtml(l.url)}</div>
+                </div>
+                <button class="link-del" onclick="event.stopPropagation();deleteLink('${l.id}')">×</button>
+              </div>`;
+          }).join('')}
+        </div>`).join('');
+    }
+
+    function getLinksSummary() {
+      const links = Store.get('wr_links', []);
+      if (!links.length) return [{ text: 'No links saved', urgent: false }];
+      const groups = {};
+      links.forEach(l => { groups[l.category] = (groups[l.category] || 0) + 1; });
+      return Object.entries(groups).slice(0,3).map(([cat, n]) => ({ text: `${cat} (${n})`, urgent: false }));
     }
 
     /* ══════════════════════════════════════
