@@ -220,6 +220,75 @@
       #home-clock { font-size: 36px; }
     }
 
+    /* ── Tasks ── */
+    #tasks-add-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    #tasks-add-row .input { flex: 1; }
+    #tasks-filters {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .filter-btn {
+      font-size: 13px;
+      color: var(--text3);
+      cursor: pointer;
+      padding-bottom: 2px;
+      border-bottom: 1.5px solid transparent;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .filter-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      border-left: 3px solid transparent;
+    }
+    .task-item.priority { border-left-color: var(--danger); }
+    .task-item.done .task-text { text-decoration: line-through; color: var(--text3); }
+    .task-check {
+      width: 16px; height: 16px;
+      border: 1.5px solid var(--border2);
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .task-check.checked { background: var(--blue); border-color: var(--blue); }
+    .task-check.checked::after { content: '✓'; color: #fff; font-size: 10px; }
+    .task-text { flex: 1; font-size: 14px; }
+    .priority-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--danger);
+      background: #ef444420;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .task-delete {
+      background: none;
+      border: none;
+      color: var(--text3);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0 2px;
+    }
+    .task-delete:hover { color: var(--danger); }
+    #tasks-empty { color: var(--text3); font-size: 14px; text-align: center; padding: 32px 0; }
+
     /* ── Morning Check-in Overlay ── */
     #checkin-overlay {
       display: none;
@@ -309,7 +378,21 @@
       <!-- Cards injected by renderHome() -->
     </div>
   </div>
-  <div class="section" id="section-tasks"><h2 class="section-heading">Tasks</h2></div>
+  <div class="section" id="section-tasks">
+    <h2 class="section-heading">Tasks</h2>
+    <div id="tasks-add-row">
+      <input class="input" id="task-input" placeholder="Add a task…" />
+      <button class="btn btn-ghost" id="task-priority-btn" title="Toggle priority">!</button>
+      <button class="btn btn-primary" onclick="addTask()">Add</button>
+    </div>
+    <div id="tasks-filters">
+      <button class="filter-btn active" data-filter="all"    onclick="setTaskFilter('all')">All</button>
+      <button class="filter-btn"        data-filter="active" onclick="setTaskFilter('active')">Active</button>
+      <button class="filter-btn"        data-filter="done"   onclick="setTaskFilter('done')">Done</button>
+    </div>
+    <div id="tasks-list"></div>
+    <div id="tasks-empty" style="display:none">No tasks here.</div>
+  </div>
   <div class="section" id="section-watchlist"><h2 class="section-heading">Watchlist</h2></div>
   <div class="section" id="section-calendar"><h2 class="section-heading">Calendar</h2></div>
   <div class="section" id="section-notes"><h2 class="section-heading">Notes</h2></div>
@@ -365,7 +448,6 @@
     }
 
     // Stub render functions — replaced section by section in later tasks
-    function renderTasks()     {}
     function renderWatchlist() {}
     function renderCalendar()  {}
     function renderNotes()     {}
@@ -376,6 +458,90 @@
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => navigate(tab.dataset.tab));
     });
+
+    /* ══════════════════════════════════════
+       TASKS
+    ══════════════════════════════════════ */
+
+    let taskFilter   = 'all';
+    let taskPriority = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('task-input');
+      if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+      const pb = document.getElementById('task-priority-btn');
+      if (pb) pb.addEventListener('click', () => {
+        taskPriority = !taskPriority;
+        pb.style.color      = taskPriority ? 'var(--danger)' : '';
+        pb.style.borderColor = taskPriority ? 'var(--danger)' : '';
+      });
+    });
+
+    function addTask() {
+      const input = document.getElementById('task-input');
+      const text  = input.value.trim();
+      if (!text) return;
+      const todos = Store.get('wr_todos', []);
+      todos.push({ id: uid(), text, done: false, priority: taskPriority, createdDate: todayStr() });
+      Store.set('wr_todos', todos);
+      input.value  = '';
+      taskPriority = false;
+      document.getElementById('task-priority-btn').style.color = '';
+      renderTasks();
+    }
+
+    function toggleTask(id) {
+      const todos = Store.get('wr_todos', []);
+      const t = todos.find(t => t.id === id);
+      if (t) { t.done = !t.done; Store.set('wr_todos', todos); }
+      renderTasks();
+    }
+
+    function deleteTask(id) {
+      Store.set('wr_todos', Store.get('wr_todos', []).filter(t => t.id !== id));
+      renderTasks();
+    }
+
+    function setTaskFilter(f) {
+      taskFilter = f;
+      document.querySelectorAll('#tasks-filters .filter-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.filter === f)
+      );
+      renderTasks();
+    }
+
+    function renderTasks() {
+      let todos = Store.get('wr_todos', []);
+      todos.sort((a, b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0));
+      if (taskFilter === 'active') todos = todos.filter(t => !t.done);
+      if (taskFilter === 'done')   todos = todos.filter(t =>  t.done);
+      const list  = document.getElementById('tasks-list');
+      const empty = document.getElementById('tasks-empty');
+      if (todos.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = '';
+        return;
+      }
+      empty.style.display = 'none';
+      list.innerHTML = todos.map(t => `
+        <div class="task-item${t.priority ? ' priority' : ''}${t.done ? ' done' : ''}">
+          <div class="task-check${t.done ? ' checked' : ''}" onclick="toggleTask('${t.id}')"></div>
+          <span class="task-text">${escHtml(t.text)}</span>
+          ${t.priority && !t.done ? '<span class="priority-badge">!</span>' : ''}
+          <button class="task-delete" onclick="deleteTask('${t.id}')" title="Delete">×</button>
+        </div>
+      `).join('');
+    }
+
+    function getTaskSummary() {
+      const todos = Store.get('wr_todos', []).filter(t => !t.done);
+      if (!todos.length) return [{ text: 'All done!', urgent: false }];
+      return todos.slice(0, 3).map(t => ({ text: t.text, urgent: t.priority }));
+    }
+
+    function uid() {
+      return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
 
     /* ══════════════════════════════════════
        MORNING CHECK-IN
@@ -523,7 +689,6 @@
     }
 
     // Summary data providers — return [{text, urgent}] — stubs replaced by section tasks
-    function getTaskSummary()    { return []; }
     function getWatchSummary()   { return []; }
     function getCalSummary()     { return []; }
     function getNotesSummary()   { return []; }
