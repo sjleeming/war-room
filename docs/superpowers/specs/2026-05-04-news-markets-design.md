@@ -105,9 +105,9 @@ Both feeds fetched in parallel. Results merged and sorted by `pubDate` descendin
 | Section | Auto-refresh interval | Manual |
 |---------|-----------------------|--------|
 | Markets | Every 5 minutes | ↻ button |
-| News | Every 10 minutes | ↻ button |
+| News | Every 15 minutes | ↻ button |
 
-News is capped at 10 minutes to stay within rss2json's free tier limit of 10 requests/hour (2 feeds × 6/hr = 12 req/hr at 10-min interval).
+News is capped at 15 minutes to stay within rss2json's free tier limit of 10 requests/hour (2 feeds × 4/hr = 8 req/hr at 15-min interval).
 
 Auto-refresh only fires when `currentTab === 'home'` to avoid background fetches when the user is on another tab.
 
