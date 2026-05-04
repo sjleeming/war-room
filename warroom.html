@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>War Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── CSS Variables ── */
+    :root {
+      --bg:        #111318;
+      --surface:   #1a1f2e;
+      --surface2:  #222840;
+      --border:    #1f2333;
+      --border2:   #374151;
+      --text:      #e5e7eb;
+      --text2:     #9ca3af;
+      --text3:     #6b7280;
+      --danger:    #ef4444;
+
+      --blue:      #3b82f6;
+      --purple:    #a855f7;
+      --teal:      #14b8a6;
+      --amber:     #f59e0b;
+      --green:     #22c55e;
+      --coral:     #f97316;
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Tab Bar ── */
+    #tab-bar {
+      display: flex;
+      gap: 2px;
+      padding: 10px 16px 0;
+      background: #0d1017;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .tab {
+      padding: 8px 16px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text3);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .tab:hover { color: var(--text2); }
+    .tab.active { color: var(--text); }
+    .tab[data-tab="home"].active  { border-color: var(--text2); color: var(--text); }
+    .tab[data-tab="tasks"].active     { border-color: var(--blue);   color: var(--blue); }
+    .tab[data-tab="watchlist"].active { border-color: var(--purple); color: var(--purple); }
+    .tab[data-tab="calendar"].active  { border-color: var(--teal);   color: var(--teal); }
+    .tab[data-tab="notes"].active     { border-color: var(--amber);  color: var(--amber); }
+    .tab[data-tab="habits"].active    { border-color: var(--green);  color: var(--green); }
+    .tab[data-tab="links"].active     { border-color: var(--coral);  color: var(--coral); }
+
+    /* ── Sections ── */
+    .section {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 20px;
+      max-width: 960px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .section.active { display: block; }
+
+    /* ── Section heading ── */
+    .section-heading {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 20px;
+    }
+    #section-tasks    .section-heading { color: var(--blue); }
+    #section-watchlist .section-heading { color: var(--purple); }
+    #section-calendar  .section-heading { color: var(--teal); }
+    #section-notes     .section-heading { color: var(--amber); }
+    #section-habits    .section-heading { color: var(--green); }
+    #section-links     .section-heading { color: var(--coral); }
+
+    /* ── Shared card ── */
+    .card {
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text2);
+    }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+
+    /* ── Inputs ── */
+    .input {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .input:focus { border-color: var(--blue); }
+    select.input { cursor: pointer; }
+
+    /* ── Fade transition ── */
+    .section { animation: fadeIn 0.18s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .tab { padding: 8px 10px; font-size: 12px; }
+      .section { padding: 16px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Tab Bar -->
+  <nav id="tab-bar">
+    <div class="tab active" data-tab="home">Home</div>
+    <div class="tab" data-tab="tasks">Tasks</div>
+    <div class="tab" data-tab="watchlist">Watchlist</div>
+    <div class="tab" data-tab="calendar">Calendar</div>
+    <div class="tab" data-tab="notes">Notes</div>
+    <div class="tab" data-tab="habits">Habits</div>
+    <div class="tab" data-tab="links">Links</div>
+  </nav>
+
+  <!-- Sections (shells — content added in later tasks) -->
+  <div class="section active" id="section-home"></div>
+  <div class="section" id="section-tasks"><h2 class="section-heading">Tasks</h2></div>
+  <div class="section" id="section-watchlist"><h2 class="section-heading">Watchlist</h2></div>
+  <div class="section" id="section-calendar"><h2 class="section-heading">Calendar</h2></div>
+  <div class="section" id="section-notes"><h2 class="section-heading">Notes</h2></div>
+  <div class="section" id="section-habits"><h2 class="section-heading">Habits</h2></div>
+  <div class="section" id="section-links"><h2 class="section-heading">Links</h2></div>
+
+  <script>
+    // placeholder — JS added in later tasks
+  </script>
+</body>
+</html>
