@@ -229,6 +229,82 @@
       #home-clock { font-size: 36px; }
     }
 
+    /* ── Home two-column layout ── */
+    #section-home {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+      max-width: 1200px;
+    }
+    #home-main {
+      flex: 2;
+      min-width: 0;
+    }
+
+    /* ── News Sidebar ── */
+    #news-sidebar {
+      flex: 1;
+      min-width: 240px;
+      max-width: 320px;
+      background: var(--surface);
+      border-radius: 10px;
+      border-left: 3px solid var(--blue);
+      padding: 14px 16px;
+      align-self: flex-start;
+      position: sticky;
+      top: 0;
+    }
+    #news-sidebar-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .news-article {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .news-article:hover { opacity: 0.8; }
+    .news-article:last-child { border-bottom: none; }
+    .news-article-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 3px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
+    .news-article-desc {
+      font-size: 11px;
+      color: var(--text3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+    .news-source-badge {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .news-source-bbc     { color: var(--blue);   background: #3b82f620; }
+    .news-source-reuters { color: var(--purple);  background: #a855f720; }
+
+    @media (max-width: 900px) {
+      #section-home    { flex-direction: column; }
+      #news-sidebar    { max-width: 100%; border-left: none; border-top: 3px solid var(--blue); }
+    }
+
     /* ── Tasks ── */
     #tasks-add-row {
       display: flex;
@@ -527,13 +603,19 @@
 
   <!-- Sections (shells — content added in later tasks) -->
   <div class="section active" id="section-home">
-    <div id="home-header">
-      <div id="home-clock">00:00:00</div>
-      <div id="home-date"></div>
-      <div id="home-greeting"></div>
+    <div id="home-main">
+      <div id="home-header">
+        <div id="home-clock">00:00:00</div>
+        <div id="home-date"></div>
+        <div id="home-greeting"></div>
+      </div>
+      <div id="home-grid">
+        <!-- Cards injected by renderHome() -->
+      </div>
     </div>
-    <div id="home-grid">
-      <!-- Cards injected by renderHome() -->
+    <div id="news-sidebar">
+      <div id="news-sidebar-label">News</div>
+      <div id="news-list"><p style="color:var(--text3);font-size:12px">Loading news…</p></div>
     </div>
   </div>
   <div class="section" id="section-tasks">
@@ -665,8 +747,8 @@
       section.classList.add('active');
       tabEl.classList.add('active');
       currentTab = tab;
-      if (tab === 'home') renderHome();
-      else renderSection(tab);
+      if (tab === 'home') { renderHome(); startNewsRefresh(); }
+      else { stopNewsRefresh(); renderSection(tab); }
     }
 
     function renderSection(tab) {
@@ -1179,6 +1261,80 @@
           </div>
         </div>
       `).join('');
+    }
+
+    /* ══════════════════════════════════════
+       NEWS SIDEBAR
+    ══════════════════════════════════════ */
+
+    const NEWS_FEEDS = [
+      { url: 'https://feeds.bbci.co.uk/news/rss.xml',          source: 'BBC',     cls: 'news-source-bbc'     },
+      { url: 'https://feeds.reuters.com/reuters/topNews',       source: 'Reuters', cls: 'news-source-reuters' },
+    ];
+    const CORS_PROXY = 'https://corsproxy.io/?';
+    let newsRefreshTimer = null;
+
+    async function fetchFeed(feed) {
+      const res  = await fetch(CORS_PROXY + encodeURIComponent(feed.url));
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const doc  = new DOMParser().parseFromString(text, 'text/xml');
+      const items = Array.from(doc.getElementsByTagName('item')).slice(0, 4);
+      return items.map(item => {
+        const getText = tag => item.getElementsByTagName(tag)[0]?.textContent?.trim() || '';
+        return {
+          title:  getText('title'),
+          desc:   getText('description').replace(/<[^>]+>/g, '').trim(),
+          url:    getText('link') || getText('guid') || '#',
+          source: feed.source,
+          cls:    feed.cls,
+        };
+      });
+    }
+
+    async function fetchNews() {
+      const list = document.getElementById('news-list');
+      if (!list) return;
+      list.innerHTML = '<p style="color:var(--text3);font-size:12px">Loading news…</p>';
+
+      const results  = await Promise.allSettled(NEWS_FEEDS.map(fetchFeed));
+      const articles = results
+        .filter(r => r.status === 'fulfilled')
+        .flatMap(r => r.value);
+
+      renderNews(articles);
+    }
+
+    function renderNews(articles) {
+      const list = document.getElementById('news-list');
+      if (!list) return;
+      if (!articles.length) {
+        list.innerHTML = '<p style="color:var(--text3);font-size:12px">Could not load news.</p>';
+        return;
+      }
+      list.innerHTML = articles.map(a => `
+        <div class="news-article" data-url="${escHtml(a.url)}" onclick="openNewsArticle(this)">
+          <div class="news-article-title">${escHtml(a.title)}</div>
+          <div class="news-article-desc">${escHtml(a.desc)}</div>
+          <span class="news-source-badge ${escHtml(a.cls)}">${escHtml(a.source)}</span>
+        </div>
+      `).join('');
+    }
+
+    function openNewsArticle(el) {
+      const url = el.dataset.url;
+      if (url && url !== '#') window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function startNewsRefresh() {
+      clearInterval(newsRefreshTimer);
+      fetchNews();
+      newsRefreshTimer = setInterval(fetchNews, 15 * 60 * 1000);
+    }
+
+    function stopNewsRefresh() {
+      clearInterval(newsRefreshTimer);
+      newsRefreshTimer = null;
     }
 
     /* ══════════════════════════════════════
