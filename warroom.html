@@ -709,6 +709,7 @@
       input.value  = '';
       taskPriority = false;
       document.getElementById('task-priority-btn').style.color = '';
+      document.getElementById('task-priority-btn').style.borderColor = '';
       renderTasks();
     }
 
@@ -1039,13 +1040,14 @@
     ══════════════════════════════════════ */
 
     function todayStr() {
-      return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
 
     function yesterdayStr() {
       const d = new Date();
       d.setDate(d.getDate() - 1);
-      return d.toISOString().slice(0, 10);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
 
     function runMorningCheckin() {
@@ -1149,7 +1151,7 @@
     function updateClock() {
       const now = new Date();
       document.getElementById('home-clock').textContent =
-        now.toLocaleTimeString('en-GB');
+        now.toLocaleTimeString();
       document.getElementById('home-date').textContent = formatDate(now);
       document.getElementById('home-greeting').textContent = getGreeting();
     }
@@ -1187,7 +1189,7 @@
       return Array.from({ length: 7 }, (_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - (6 - i));
-        return d.toISOString().slice(0, 10);
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       });
     }
 
@@ -1305,7 +1307,7 @@
           ${items.map(l => {
             const initial = (l.title || l.url)[0].toUpperCase();
             return `
-              <div class="link-item" onclick="window.open('${l.url}','_blank')">
+              <div class="link-item" data-url="${escHtml(l.url)}" onclick="window.open(this.dataset.url,'_blank')">
                 <div class="link-avatar">${escHtml(initial)}</div>
                 <div class="link-info">
                   <div class="link-label">${escHtml(l.title)}</div>
