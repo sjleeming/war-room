@@ -352,6 +352,39 @@
       font-size: 12px;
       cursor: pointer;
     }
+
+    /* ── Watchlist ── */
+    #watch-add-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    #watch-add-row .input { flex: 2; min-width: 160px; }
+    #watch-filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .watch-filter-btn {
+      font-size: 12px; color: var(--text3); cursor: pointer;
+      padding: 4px 10px; border-radius: 20px;
+      background: var(--surface); border: 1px solid var(--border2);
+    }
+    .watch-filter-btn.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+    .watch-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; background: var(--surface);
+      border-radius: 8px; margin-bottom: 6px;
+    }
+    .watch-title { flex: 1; font-size: 14px; }
+    .watch-type {
+      font-size: 11px; color: var(--text3);
+      background: var(--bg); padding: 2px 8px; border-radius: 10px;
+    }
+    .watch-status {
+      font-size: 11px; font-weight: 600; padding: 3px 10px;
+      border-radius: 12px; cursor: pointer; user-select: none;
+      border: none; font-family: 'Plus Jakarta Sans', sans-serif;
+      transition: opacity 0.15s;
+    }
+    .watch-status:hover { opacity: 0.8; }
+    .watch-status.want       { background: #374151; color: var(--text2); }
+    .watch-status.inprogress { background: var(--purple); color: #fff; }
+    .watch-status.done       { background: #22c55e30; color: var(--green); }
+    .watch-delete { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; }
+    .watch-delete:hover { color: var(--danger); }
   </style>
 </head>
 <body>
@@ -393,7 +426,27 @@
     <div id="tasks-list"></div>
     <div id="tasks-empty" style="display:none">No tasks here.</div>
   </div>
-  <div class="section" id="section-watchlist"><h2 class="section-heading">Watchlist</h2></div>
+  <div class="section" id="section-watchlist">
+    <h2 class="section-heading">Watchlist</h2>
+    <div id="watch-add-row">
+      <input class="input" id="watch-input" placeholder="Title…" />
+      <select class="input" id="watch-type">
+        <option value="Film">Film</option>
+        <option value="Show">Show</option>
+        <option value="Book">Book</option>
+        <option value="Other">Other</option>
+      </select>
+      <button class="btn btn-primary" onclick="addWatchItem()">Add</button>
+    </div>
+    <div id="watch-filters">
+      <button class="watch-filter-btn active" data-wf="All"   onclick="setWatchFilter('All')">All</button>
+      <button class="watch-filter-btn" data-wf="Film"   onclick="setWatchFilter('Film')">Film</button>
+      <button class="watch-filter-btn" data-wf="Show"   onclick="setWatchFilter('Show')">Show</button>
+      <button class="watch-filter-btn" data-wf="Book"   onclick="setWatchFilter('Book')">Book</button>
+      <button class="watch-filter-btn" data-wf="Other"  onclick="setWatchFilter('Other')">Other</button>
+    </div>
+    <div id="watch-list"></div>
+  </div>
   <div class="section" id="section-calendar"><h2 class="section-heading">Calendar</h2></div>
   <div class="section" id="section-notes"><h2 class="section-heading">Notes</h2></div>
   <div class="section" id="section-habits"><h2 class="section-heading">Habits</h2></div>
@@ -448,7 +501,6 @@
     }
 
     // Stub render functions — replaced section by section in later tasks
-    function renderWatchlist() {}
     function renderCalendar()  {}
     function renderNotes()     {}
     function renderHabits()    {}
@@ -541,6 +593,72 @@
 
     function uid() {
       return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    /* ══════════════════════════════════════
+       WATCHLIST
+    ══════════════════════════════════════ */
+
+    let watchFilter = 'All';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const wi = document.getElementById('watch-input');
+      if (wi) wi.addEventListener('keydown', e => { if (e.key === 'Enter') addWatchItem(); });
+    });
+
+    function addWatchItem() {
+      const title = document.getElementById('watch-input').value.trim();
+      const type  = document.getElementById('watch-type').value;
+      if (!title) return;
+      const items = Store.get('wr_watch', []);
+      items.push({ id: uid(), title, type, status: 'want' });
+      Store.set('wr_watch', items);
+      document.getElementById('watch-input').value = '';
+      renderWatchlist();
+    }
+
+    function cycleWatchStatus(id) {
+      const items  = Store.get('wr_watch', []);
+      const item   = items.find(i => i.id === id);
+      const cycle  = { want: 'inprogress', inprogress: 'done', done: 'want' };
+      if (item) { item.status = cycle[item.status]; Store.set('wr_watch', items); }
+      renderWatchlist();
+    }
+
+    function deleteWatchItem(id) {
+      Store.set('wr_watch', Store.get('wr_watch', []).filter(i => i.id !== id));
+      renderWatchlist();
+    }
+
+    function setWatchFilter(f) {
+      watchFilter = f;
+      document.querySelectorAll('#watch-filters .watch-filter-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.wf === f)
+      );
+      renderWatchlist();
+    }
+
+    const STATUS_LABELS = { want: 'Want', inprogress: 'In progress', done: 'Done' };
+
+    function renderWatchlist() {
+      let items = Store.get('wr_watch', []);
+      if (watchFilter !== 'All') items = items.filter(i => i.type === watchFilter);
+      document.getElementById('watch-list').innerHTML = items.length
+        ? items.map(i => `
+          <div class="watch-item">
+            <span class="watch-title">${escHtml(i.title)}</span>
+            <span class="watch-type">${i.type}</span>
+            <button class="watch-status ${i.status}" onclick="cycleWatchStatus('${i.id}')">${STATUS_LABELS[i.status]}</button>
+            <button class="watch-delete" onclick="deleteWatchItem('${i.id}')">×</button>
+          </div>`).join('')
+        : '<p style="color:var(--text3);padding:24px 0;text-align:center">Nothing on the watchlist.</p>';
+    }
+
+    function getWatchSummary() {
+      const item = Store.get('wr_watch', []).find(i => i.status === 'inprogress');
+      if (item) return [{ text: `${item.type}: ${item.title}`, urgent: false }];
+      const want = Store.get('wr_watch', []).filter(i => i.status === 'want');
+      return want.slice(0, 2).map(i => ({ text: `${i.type}: ${i.title}`, urgent: false }));
     }
 
     /* ══════════════════════════════════════
@@ -689,7 +807,6 @@
     }
 
     // Summary data providers — return [{text, urgent}] — stubs replaced by section tasks
-    function getWatchSummary()   { return []; }
     function getCalSummary()     { return []; }
     function getNotesSummary()   { return []; }
     function getHabitsSummary()  { return []; }
