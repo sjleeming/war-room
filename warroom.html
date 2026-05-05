@@ -334,53 +334,48 @@
       #home-clock { font-size: 36px; }
     }
 
-    /* ── Home two-column layout ── */
-    #section-home {
-      display: flex;
-      flex-direction: row;
-      gap: 20px;
-      max-width: 1200px;
+    /* ── News Panel ── */
+    #home-news {
+      margin-top: 0;
     }
-    #home-main {
-      flex: 2;
-      min-width: 0;
-    }
-
-    /* ── News Sidebar ── */
     #news-sidebar {
-      flex: 1;
-      min-width: 240px;
-      max-width: 320px;
-      background: var(--surface);
-      border-radius: 10px;
-      border-left: 3px solid var(--blue);
-      padding: 14px 16px;
-      align-self: flex-start;
-      position: sticky;
-      top: 0;
+      background: none;
+      border: none;
+      padding: 0;
+      position: static;
     }
     #news-sidebar-label {
       font-family: 'Syne', sans-serif;
       font-size: 11px;
       font-weight: 700;
-      color: var(--blue);
+      color: var(--text3);
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    #news-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
     }
     .news-article {
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 14px 16px;
       cursor: pointer;
-      transition: opacity 0.15s;
+      transition: box-shadow 0.15s, transform 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    .news-article:hover { opacity: 0.8; }
-    .news-article:last-child { border-bottom: none; }
+    .news-article:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+      transform: translateY(-1px);
+    }
     .news-article-title {
       font-size: 13px;
       font-weight: 600;
       color: var(--text);
-      margin-bottom: 3px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -393,22 +388,17 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-bottom: 4px;
     }
     .news-source-badge {
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 700;
-      padding: 1px 6px;
-      border-radius: 4px;
+      padding: 2px 8px;
+      border-radius: 20px;
       display: inline-block;
+      align-self: flex-start;
     }
     .news-source-bbc     { color: var(--blue);   background: #3b82f620; }
     .news-source-reuters { color: var(--purple);  background: #a855f720; }
-
-    @media (max-width: 900px) {
-      #section-home    { flex-direction: column; }
-      #news-sidebar    { max-width: 100%; border-left: none; border-top: 3px solid var(--blue); }
-    }
 
     /* ── Tasks ── */
     #tasks-add-row {
@@ -818,10 +808,10 @@
       <div id="home-grid">
         <!-- Cards injected by renderHome() -->
       </div>
-    </div>
-    <div id="news-sidebar">
-      <div id="news-sidebar-label">News</div>
-      <div id="news-list"><p style="color:var(--text3);font-size:12px">Loading news…</p></div>
+      <div id="news-sidebar" style="margin-top:24px">
+        <div id="news-sidebar-label">Latest News</div>
+        <div id="news-list"><p style="color:var(--text3);font-size:12px">Loading news…</p></div>
+      </div>
     </div>
   </div>
   <div class="section" id="section-tasks">
