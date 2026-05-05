@@ -128,8 +128,8 @@
 
     @media (max-width: 600px) {
       #tab-logo span { display: none; }
-      .tab { padding: 6px 10px; font-size: 0; }
-      .tab::first-letter { font-size: 16px; }
+      .tab-label { display: none; }
+      .tab { padding: 6px 8px; }
     }
 
     /* ── Sections ── */
@@ -740,13 +740,13 @@
   <nav id="tab-bar">
     <div id="tab-logo">⚔️ <span>WAR ROOM</span></div>
     <div id="tab-pills">
-      <div class="tab active" data-tab="home">🏠 Home</div>
-      <div class="tab" data-tab="tasks">✓ Tasks</div>
-      <div class="tab" data-tab="watchlist">👁 Watchlist</div>
-      <div class="tab" data-tab="calendar">📅 Calendar</div>
-      <div class="tab" data-tab="notes">📝 Notes</div>
-      <div class="tab" data-tab="habits">⬜ Habits</div>
-      <div class="tab" data-tab="links">🔗 Links</div>
+      <div class="tab active" data-tab="home"><span class="tab-icon">🏠</span><span class="tab-label"> Home</span></div>
+      <div class="tab" data-tab="tasks"><span class="tab-icon">✓</span><span class="tab-label"> Tasks</span></div>
+      <div class="tab" data-tab="watchlist"><span class="tab-icon">👁</span><span class="tab-label"> Watchlist</span></div>
+      <div class="tab" data-tab="calendar"><span class="tab-icon">📅</span><span class="tab-label"> Calendar</span></div>
+      <div class="tab" data-tab="notes"><span class="tab-icon">📝</span><span class="tab-label"> Notes</span></div>
+      <div class="tab" data-tab="habits"><span class="tab-icon">⬜</span><span class="tab-label"> Habits</span></div>
+      <div class="tab" data-tab="links"><span class="tab-icon">🔗</span><span class="tab-label"> Links</span></div>
     </div>
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
   </nav>
