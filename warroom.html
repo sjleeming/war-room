@@ -206,7 +206,6 @@
     @media (max-width: 600px) {
       .section { padding: 16px 12px; }
       #notes-grid { grid-template-columns: 1fr; }
-      #home-grid  { grid-template-columns: 1fr 1fr; }
       #links-add-row, #watch-add-row { flex-direction: column; }
       #tasks-add-row .btn { padding: 8px 10px; }
       #cal-grid { gap: 2px; }
@@ -214,12 +213,22 @@
     }
 
     /* ── Home ── */
-    #home-header {
-      margin-bottom: 28px;
+    #home-hero {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
     }
+    #home-hero-left { flex-shrink: 0; }
+    #home-hero-centre { flex: 1; }
+    #home-hero-right { flex-shrink: 0; }
+
     #home-clock {
       font-family: 'Syne', sans-serif;
-      font-size: 48px;
+      font-size: 42px;
       font-weight: 800;
       color: var(--text);
       letter-spacing: -1px;
@@ -227,20 +236,42 @@
       margin-bottom: 4px;
     }
     #home-date {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text3);
-      letter-spacing: 0.5px;
-      margin-bottom: 10px;
+      letter-spacing: 0.3px;
     }
     #home-greeting {
-      font-size: 16px;
+      font-size: 15px;
       color: var(--text2);
       font-weight: 500;
     }
+    #home-focus-strip {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-end;
+    }
+    .focus-pill {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--accent-bg);
+      color: var(--accent);
+      white-space: nowrap;
+    }
     #home-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 700px) {
+      #home-hero { flex-direction: column; align-items: flex-start; }
+      #home-hero-right { align-self: flex-start; }
+      #home-focus-strip { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+      #home-clock { font-size: 32px; }
     }
     .home-card {
       background: var(--surface);
@@ -749,10 +780,17 @@
   <!-- Sections (shells — content added in later tasks) -->
   <div class="section active" id="section-home">
     <div id="home-main">
-      <div id="home-header">
-        <div id="home-clock">00:00:00</div>
-        <div id="home-date"></div>
-        <div id="home-greeting"></div>
+      <div id="home-hero">
+        <div id="home-hero-left">
+          <div id="home-clock">00:00:00</div>
+          <div id="home-date"></div>
+        </div>
+        <div id="home-hero-centre">
+          <div id="home-greeting"></div>
+        </div>
+        <div id="home-hero-right">
+          <div id="home-focus-strip"></div>
+        </div>
       </div>
       <div id="home-grid">
         <!-- Cards injected by renderHome() -->
@@ -1405,6 +1443,24 @@
 
     function renderHome() {
       updateClock();
+
+      // Daily focus strip
+      const focusStrip = document.getElementById('home-focus-strip');
+      if (focusStrip) {
+        const activeTasks  = Store.get('wr_todos', []).filter(t => !t.done).length;
+        const habits       = Store.get('wr_habits', []);
+        const completions  = Store.get('wr_completions', {});
+        const habitsDone   = (completions[todayStr()] || []).length;
+        const todayEvents  = (Store.get('wr_calevents', {})[todayStr()] || []).length;
+        const pills = [];
+        if (activeTasks)   pills.push(`${activeTasks} task${activeTasks !== 1 ? 's' : ''}`);
+        if (habits.length) pills.push(`${habitsDone}/${habits.length} habits`);
+        if (todayEvents)   pills.push(`${todayEvents} event${todayEvents !== 1 ? 's' : ''} today`);
+        focusStrip.innerHTML = pills.length
+          ? pills.map(p => `<span class="focus-pill">${p}</span>`).join('')
+          : '<span class="focus-pill">All clear ✓</span>';
+      }
+
       const grid = document.getElementById('home-grid');
       const cards = [
         { tab: 'tasks',     label: 'Tasks',     color: 'var(--blue)',   items: getTaskSummary()     },
