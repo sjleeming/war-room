@@ -66,34 +66,71 @@
     /* ── Tab Bar ── */
     #tab-bar {
       display: flex;
-      gap: 2px;
-      padding: 10px 16px 0;
-      background: #0d1017;
+      align-items: center;
+      gap: 0;
+      padding: 0 20px;
+      height: 52px;
+      background: var(--surface);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
-      overflow-x: auto;
     }
+
+    #tab-logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: 1px;
+      white-space: nowrap;
+      margin-right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #tab-pills {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    #tab-pills::-webkit-scrollbar { display: none; }
+
     .tab {
-      padding: 8px 16px;
+      padding: 6px 14px;
       font-family: 'Syne', sans-serif;
       font-size: 13px;
       font-weight: 700;
       color: var(--text3);
       cursor: pointer;
-      border-bottom: 2px solid transparent;
+      border-radius: 8px;
       white-space: nowrap;
-      transition: color 0.15s, border-color 0.15s;
+      transition: background 0.15s, color 0.15s;
       user-select: none;
+      border: none;
     }
-    .tab:hover { color: var(--text2); }
-    .tab.active { color: var(--text); }
-    .tab[data-tab="home"].active  { border-color: var(--text2); color: var(--text); }
-    .tab[data-tab="tasks"].active     { border-color: var(--blue);   color: var(--blue); }
-    .tab[data-tab="watchlist"].active { border-color: var(--purple); color: var(--purple); }
-    .tab[data-tab="calendar"].active  { border-color: var(--teal);   color: var(--teal); }
-    .tab[data-tab="notes"].active     { border-color: var(--amber);  color: var(--amber); }
-    .tab[data-tab="habits"].active    { border-color: var(--green);  color: var(--green); }
-    .tab[data-tab="links"].active     { border-color: var(--coral);  color: var(--coral); }
+    .tab:hover { background: var(--surface2); color: var(--text2); }
+    .tab.active { background: var(--accent); color: #fff; }
+
+    #theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      line-height: 1;
+      transition: background 0.15s;
+      margin-left: 8px;
+    }
+    #theme-toggle:hover { background: var(--surface2); }
+
+    @media (max-width: 600px) {
+      #tab-logo span { display: none; }
+      .tab { padding: 6px 10px; font-size: 0; }
+      .tab::first-letter { font-size: 16px; }
+    }
 
     /* ── Sections ── */
     .section {
@@ -702,13 +739,17 @@
 
   <!-- Tab Bar -->
   <nav id="tab-bar">
-    <div class="tab active" data-tab="home">Home</div>
-    <div class="tab" data-tab="tasks">Tasks</div>
-    <div class="tab" data-tab="watchlist">Watchlist</div>
-    <div class="tab" data-tab="calendar">Calendar</div>
-    <div class="tab" data-tab="notes">Notes</div>
-    <div class="tab" data-tab="habits">Habits</div>
-    <div class="tab" data-tab="links">Links</div>
+    <div id="tab-logo">⚔️ <span>WAR ROOM</span></div>
+    <div id="tab-pills">
+      <div class="tab active" data-tab="home">🏠 Home</div>
+      <div class="tab" data-tab="tasks">✓ Tasks</div>
+      <div class="tab" data-tab="watchlist">👁 Watchlist</div>
+      <div class="tab" data-tab="calendar">📅 Calendar</div>
+      <div class="tab" data-tab="notes">📝 Notes</div>
+      <div class="tab" data-tab="habits">⬜ Habits</div>
+      <div class="tab" data-tab="links">🔗 Links</div>
+    </div>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
   </nav>
 
   <!-- Sections (shells — content added in later tasks) -->
