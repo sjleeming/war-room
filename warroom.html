@@ -771,6 +771,21 @@
       #ticker-strip { gap: 5px; }
       .ticker-card  { min-width: 70px; padding: 8px 9px; }
     }
+
+    /* ── Markets Tab Layout ── */
+    .markets-tab-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .market-group { margin-bottom: 28px; }
+    .market-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
