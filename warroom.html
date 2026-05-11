@@ -23,15 +23,15 @@
       --danger: #ef4444;
     }
 
-    /* Light theme */
+    /* Arctic theme (light) */
     html[data-theme="light"] {
-      --bg:         #ffffff;
+      --bg:         #f8fafc;
       --surface:    #f1f5f9;
-      --surface2:   #dde3ec;
+      --surface2:   #e2e8f0;
       --border:     #e2e8f0;
       --border2:    #cbd5e1;
       --text:       #0f172a;
-      --text2:      #64748b;
+      --text2:      #475569;
       --text3:      #94a3b8;
       --accent:     #3b82f6;
       --accent-bg:  #eff6ff;
@@ -786,6 +786,35 @@
       gap: 10px;
       margin-top: 10px;
     }
+
+    /* ── Theme Swatches ── */
+    #theme-swatches {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .theme-swatch-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text3);
+    }
+    .theme-swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      padding: 0;
+      transition: transform 0.15s, outline 0.15s;
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+    .theme-swatch[data-theme="dark"]  { background: #18181b; border-color: #a855f7; }
+    .theme-swatch[data-theme="light"] { background: #f8fafc; border-color: #3b82f6; }
+    .theme-swatch.active { outline-color: var(--accent); }
+    .theme-swatch:hover  { transform: scale(1.15); }
   </style>
 </head>
 <body>
