@@ -1961,6 +1961,7 @@
     ══════════════════════════════════════ */
     runMorningCheckin();
     navigate('home');
+    initThemeSwatches();
     loadMarkets();
     setInterval(() => { if (currentTab === 'home') updateClock(); }, 1000);
     setInterval(() => { if (currentTab === 'home') renderHome(); }, 60000);
