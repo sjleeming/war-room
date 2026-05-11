@@ -1022,8 +1022,9 @@
       section.classList.add('active');
       tabEl.classList.add('active');
       currentTab = tab;
-      if (tab === 'home') { renderHome(); startNewsRefresh(); }
-      else { stopNewsRefresh(); renderSection(tab); }
+      if (tab === 'home')         { renderHome(); startNewsRefresh(); renderMarketsStrip(); }
+      else if (tab === 'markets') { stopNewsRefresh(); loadMarkets(); }
+      else                        { stopNewsRefresh(); renderSection(tab); }
     }
 
     function renderSection(tab) {
@@ -1783,12 +1784,150 @@
     }
 
     /* ══════════════════════════════════════
+       MARKETS
+    ══════════════════════════════════════ */
+    const TICKERS = [
+      { id: 'sp500',  symbol: '^GSPC',    name: 'S&P 500',  group: 'indices',     fmt: 'index' },
+      { id: 'nasdaq', symbol: '^IXIC',    name: 'NASDAQ',   group: 'indices',     fmt: 'index' },
+      { id: 'ftse',   symbol: '^FTSE',    name: 'FTSE 100', group: 'indices',     fmt: 'index' },
+      { id: 'dax',    symbol: '^GDAXI',   name: 'DAX',      group: 'indices',     fmt: 'index' },
+      { id: 'btc',    symbol: 'bitcoin',  name: 'BTC',      group: 'crypto',      fmt: 'crypto' },
+      { id: 'eth',    symbol: 'ethereum', name: 'ETH',      group: 'crypto',      fmt: 'crypto' },
+      { id: 'gold',   symbol: 'GC=F',     name: 'Gold',     group: 'commodities', fmt: 'commodity' },
+      { id: 'silver', symbol: 'SI=F',     name: 'Silver',   group: 'commodities', fmt: 'commodity' },
+      { id: 'oil',    symbol: 'CL=F',     name: 'Oil WTI',  group: 'commodities', fmt: 'commodity' },
+    ];
+
+    let marketsData    = {};
+    let marketsLoading = false;
+
+    function fetchWithTimeout(url, ms = 8000) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
+    }
+
+    function formatTickerPrice(ticker, val) {
+      if (val == null) return '—';
+      if (ticker.fmt === 'crypto')    return '$' + Math.round(val).toLocaleString('en-US');
+      if (ticker.fmt === 'commodity') return '$' + val.toFixed(2);
+      return val.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    }
+
+    async function fetchYahooMarkets() {
+      const nonCrypto = TICKERS.filter(t => t.fmt !== 'crypto');
+      const symbols   = nonCrypto.map(t => t.symbol).join(',');
+      const yUrl      = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}`;
+      const proxy     = `https://api.allorigins.win/get?url=${encodeURIComponent(yUrl)}`;
+      const res       = await fetchWithTimeout(proxy);
+      const outer     = await res.json();
+      const data      = JSON.parse(outer.contents);
+      return data.quoteResponse.result.map(q => ({
+        id:     TICKERS.find(t => t.symbol === q.symbol)?.id,
+        price:  q.regularMarketPrice,
+        change: q.regularMarketChange,
+        pct:    q.regularMarketChangePercent,
+      })).filter(t => t.id);
+    }
+
+    async function fetchCryptoMarkets() {
+      const url = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true';
+      const res = await fetchWithTimeout(url);
+      const d   = await res.json();
+      return [
+        { id: 'btc', price: d.bitcoin.usd,  change: null, pct: d.bitcoin.usd_24h_change },
+        { id: 'eth', price: d.ethereum.usd, change: null, pct: d.ethereum.usd_24h_change },
+      ];
+    }
+
+    async function fetchMarkets() {
+      const [yahoo, crypto] = await Promise.allSettled([fetchYahooMarkets(), fetchCryptoMarkets()]);
+      if (yahoo.status  === 'fulfilled') yahoo.value.forEach(t  => { marketsData[t.id] = t; });
+      if (crypto.status === 'fulfilled') crypto.value.forEach(t => { marketsData[t.id] = t; });
+    }
+
+    function showMarketsSkeleton() {
+      const strip = document.getElementById('ticker-strip');
+      if (strip) strip.innerHTML = TICKERS.map(() =>
+        `<div class="ticker-card"><div class="skel-line"></div><div class="skel-line short"></div></div>`
+      ).join('');
+    }
+
+    function updateMarketsTimestamp(stale = false) {
+      const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      const txt  = stale ? '⚠ stale' : `Updated ${time}`;
+      ['markets-timestamp', 'markets-tab-timestamp'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = txt;
+      });
+    }
+
+    function tickerCardHTML(t, showChange) {
+      const d = marketsData[t.id];
+      if (!d) return `<div class="ticker-card"><div class="ticker-name">${t.name}</div><div class="ticker-change">—</div></div>`;
+      const up  = d.pct >= 0;
+      const cls = up ? 'up' : 'down';
+      const arrow = up ? '▲' : '▼';
+      const changeStr = (showChange && d.change != null)
+        ? `${d.change >= 0 ? '+' : ''}${d.change.toFixed(2)} · `
+        : '';
+      return `<div class="ticker-card ${cls}">
+        <div class="ticker-name">${t.name}</div>
+        <div class="ticker-change">${arrow} ${changeStr}${Math.abs(d.pct).toFixed(2)}%</div>
+        <div class="ticker-price">${formatTickerPrice(t, d.price)}</div>
+      </div>`;
+    }
+
+    function renderMarketsStrip() {
+      const strip = document.getElementById('ticker-strip');
+      if (strip) strip.innerHTML = TICKERS.map(t => tickerCardHTML(t, false)).join('');
+    }
+
+    function renderMarketsTab() {
+      const container = document.getElementById('markets-groups');
+      if (!container) return;
+      const groups = { indices: 'Indices', crypto: 'Crypto', commodities: 'Commodities' };
+      container.innerHTML = Object.entries(groups).map(([key, label]) => {
+        const cards = TICKERS.filter(t => t.group === key).map(t => tickerCardHTML(t, true)).join('');
+        return `<div class="market-group">
+          <div class="markets-section-label">${label}</div>
+          <div class="market-cards">${cards}</div>
+        </div>`;
+      }).join('');
+    }
+
+    async function loadMarkets() {
+      if (Object.keys(marketsData).length > 0) {
+        renderMarketsStrip();
+        renderMarketsTab();
+      } else {
+        showMarketsSkeleton();
+      }
+      if (marketsLoading) return;
+      marketsLoading = true;
+      let stale = false;
+      try {
+        await fetchMarkets();
+        renderMarketsStrip();
+        renderMarketsTab();
+      } catch(e) {
+        console.warn('loadMarkets failed', e);
+        stale = true;
+      } finally {
+        marketsLoading = false;
+        updateMarketsTimestamp(stale);
+      }
+    }
+
+    /* ══════════════════════════════════════
        INIT
     ══════════════════════════════════════ */
     runMorningCheckin();
     navigate('home');
+    loadMarkets();
     setInterval(() => { if (currentTab === 'home') updateClock(); }, 1000);
     setInterval(() => { if (currentTab === 'home') renderHome(); }, 60000);
+    setInterval(() => { if (currentTab === 'home' || currentTab === 'markets') loadMarkets(); }, 5 * 60 * 1000);
   </script>
 </body>
 </html>
