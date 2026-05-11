@@ -801,6 +801,7 @@
       <div class="tab" data-tab="notes"><span class="tab-icon">📝</span><span class="tab-label"> Notes</span></div>
       <div class="tab" data-tab="habits"><span class="tab-icon">⬜</span><span class="tab-label"> Habits</span></div>
       <div class="tab" data-tab="links"><span class="tab-icon">🔗</span><span class="tab-label"> Links</span></div>
+      <div class="tab" data-tab="markets"><span class="tab-icon">📈</span><span class="tab-label"> Markets</span></div>
     </div>
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
   </nav>
@@ -822,6 +823,16 @@
       </div>
       <div id="home-grid">
         <!-- Cards injected by renderHome() -->
+      </div>
+      <div id="home-markets">
+        <div class="markets-section-header">
+          <span class="markets-section-label">Markets</span>
+          <div class="markets-section-meta">
+            <span class="markets-timestamp" id="markets-timestamp"></span>
+            <button class="markets-refresh-btn" onclick="loadMarkets()" title="Refresh">↻</button>
+          </div>
+        </div>
+        <div id="ticker-strip"></div>
       </div>
       <div id="news-sidebar" style="margin-top:24px">
         <div id="news-sidebar-label">Latest News</div>
@@ -918,6 +929,17 @@
     </div>
     <div id="links-list"></div>
     <p id="links-empty" style="color:var(--text3);display:none">No links saved yet.</p>
+  </div>
+
+  <div class="section" id="section-markets">
+    <div class="markets-tab-header">
+      <h2 class="section-heading">Markets</h2>
+      <div class="markets-section-meta">
+        <span class="markets-timestamp" id="markets-tab-timestamp"></span>
+        <button class="markets-refresh-btn" onclick="loadMarkets()" title="Refresh">↻</button>
+      </div>
+    </div>
+    <div id="markets-groups"></div>
   </div>
 
   <!-- Morning Check-in Overlay -->
