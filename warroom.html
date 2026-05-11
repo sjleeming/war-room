@@ -914,7 +914,26 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    /* ── SUPABASE ── */
+    const SUPABASE_URL = 'https://ixhktyxkwvoibjlaknxy.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_v4U8nYjM5Ff6y4EoFe44mA_MR0Eh9d7';
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    /* Pull all rows from Supabase into localStorage on load */
+    (async function syncDown() {
+      try {
+        const { data, error } = await db.from('user_data').select('key, value');
+        if (error) { console.warn('Supabase syncDown failed', error); return; }
+        data.forEach(row => {
+          try { localStorage.setItem(row.key, JSON.stringify(row.value)); }
+          catch (e) { console.warn('syncDown localStorage write failed', e); }
+        });
+        console.log('War Room: synced', data.length, 'keys from cloud');
+      } catch (e) { console.warn('Supabase syncDown error', e); }
+    })();
+
     /* ── THEME ── */
     (function () {
       const saved = localStorage.getItem('wr_theme');
@@ -945,7 +964,10 @@
       },
       set(key, val) {
         try { localStorage.setItem(key, JSON.stringify(val)); }
-        catch (e) { console.warn('Store.set failed', e); }
+        catch (e) { console.warn('Store.set localStorage failed', e); }
+        db.from('user_data')
+          .upsert({ key, value: val, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+          .then(({ error }) => { if (error) console.warn('Supabase write failed', error); });
       }
     };
 
