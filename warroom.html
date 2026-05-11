@@ -832,7 +832,6 @@
       <div class="tab" data-tab="links"><span class="tab-icon">🔗</span><span class="tab-label"> Links</span></div>
       <div class="tab" data-tab="markets"><span class="tab-icon">📈</span><span class="tab-label"> Markets</span></div>
     </div>
-    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
   </nav>
 
   <!-- Sections (shells — content added in later tasks) -->
@@ -842,6 +841,11 @@
         <div id="home-hero-left">
           <div id="home-clock">00:00:00</div>
           <div id="home-date"></div>
+          <div id="theme-swatches">
+            <span class="theme-swatch-label">THEME</span>
+            <button class="theme-swatch" data-theme="dark"  onclick="setTheme('dark')"  title="Midnight"></button>
+            <button class="theme-swatch" data-theme="light" onclick="setTheme('light')" title="Arctic"></button>
+          </div>
         </div>
         <div id="home-hero-centre">
           <div id="home-greeting"></div>
