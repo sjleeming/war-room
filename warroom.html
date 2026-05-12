@@ -1947,6 +1947,14 @@
       }
     }
 
+    function navigateToCalendarDay(key) {
+      const d = new Date(key + 'T00:00:00');
+      calYear     = d.getFullYear();
+      calMonth    = d.getMonth();
+      calSelected = key;
+      navigate('calendar');
+    }
+
     /* ══════════════════════════════════════
        MINI CALENDAR (HOME)
     ══════════════════════════════════════ */
@@ -1988,7 +1996,7 @@
         const key       = `${miniCalYear}-${String(miniCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const isToday   = key === today;
         const hasEvents = events[key] && events[key].length > 0;
-        daysHtml += `<div class="mini-cal-day${isToday ? ' today' : ''}${hasEvents ? ' has-event' : ''}" onclick="navigate('calendar')">${d}</div>`;
+        daysHtml += `<div class="mini-cal-day${isToday ? ' today' : ''}${hasEvents ? ' has-event' : ''}" onclick="navigateToCalendarDay('${key}')">${d}</div>`;
       }
       const total     = offset + daysInMonth;
       const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
