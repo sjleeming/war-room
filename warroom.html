@@ -968,6 +968,42 @@
     .days-until-card.urgent-soon .days-until-count { color: var(--amber); }
     .days-until-card.urgent-now  .days-until-count { color: var(--danger); }
     #days-until-empty { font-size: 12px; color: var(--text3); margin-top: 6px; }
+    /* ── Weather Widget ── */
+    #weather-widget {
+      margin-top: 20px;
+    }
+    #weather-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--teal); margin-bottom: 10px;
+    }
+    .weather-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; background: var(--surface);
+      border-radius: 8px; margin-bottom: 6px;
+      border-left: 3px solid var(--teal);
+      position: relative;
+    }
+    .weather-icon { font-size: 22px; flex-shrink: 0; }
+    .weather-info { flex: 1; }
+    .weather-city { font-size: 13px; font-weight: 600; }
+    .weather-temp { font-size: 20px; font-weight: 800; font-family: 'Syne', sans-serif; color: var(--teal); }
+    .weather-hilo { font-size: 11px; color: var(--text3); margin-top: 1px; }
+    .weather-remove {
+      position: absolute; top: 6px; right: 8px;
+      background: none; border: none; color: var(--text3);
+      cursor: pointer; font-size: 16px; opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .weather-card:hover .weather-remove { opacity: 1; }
+    .weather-remove:hover { color: var(--danger); }
+    #weather-add-row {
+      display: flex; gap: 8px; margin-top: 8px;
+    }
+    #weather-add-row .input { flex: 1; font-size: 13px; }
+    #weather-add-btn { white-space: nowrap; }
+    #weather-add-error { font-size: 11px; color: var(--danger); margin-top: 4px; display: none; }
   </style>
 </head>
 <body>
@@ -1050,6 +1086,15 @@
             <div id="days-until-label">Days Until</div>
             <div id="days-until-list"></div>
             <p id="days-until-empty" style="display:none">No upcoming events.</p>
+          </div>
+          <div id="weather-widget">
+            <div id="weather-label">Weather</div>
+            <div id="weather-list"></div>
+            <div id="weather-add-row">
+              <input class="input" id="weather-city-input" placeholder="Add city…" />
+              <button class="btn btn-ghost" id="weather-add-btn" onclick="addWeatherLocation()">+ Add</button>
+            </div>
+            <div id="weather-add-error"></div>
           </div>
         </div>
       </div>
