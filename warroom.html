@@ -2098,6 +2098,117 @@
     setInterval(() => { if (currentTab === 'home') updateClock(); }, 1000);
     setInterval(() => { if (currentTab === 'home') renderHome(); }, 60000);
     setInterval(() => { if (currentTab === 'home' || currentTab === 'markets') loadMarkets(); }, 5 * 60 * 1000);
+
+    /* ══════════════════════════════════════
+       PIN LOCK SCREEN
+    ══════════════════════════════════════ */
+
+    async function hashPin(pin) {
+      const buf = await crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(pin)
+      );
+      return Array.from(new Uint8Array(buf))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+    function initPinLock() {
+      // Already unlocked this session
+      if (sessionStorage.getItem('wr_unlocked') === '1') {
+        document.getElementById('pin-overlay').classList.add('hidden');
+        return;
+      }
+
+      const overlay  = document.getElementById('pin-overlay');
+      const dotsEls  = [0,1,2,3].map(i => document.getElementById(`pd${i}`));
+      const msgEl    = document.getElementById('pin-message');
+      let entry      = '';
+      let mode       = localStorage.getItem('wr_pin_hash') ? 'unlock' : 'set';
+      let firstPin   = '';
+
+      function setMsg(text) { msgEl.textContent = text; }
+      function updateDots() {
+        dotsEls.forEach((d, i) => d.classList.toggle('filled', i < entry.length));
+      }
+      function shake() {
+        dotsEls.forEach(d => { d.classList.add('pin-shake'); });
+        setTimeout(() => dotsEls.forEach(d => d.classList.remove('pin-shake')), 450);
+      }
+      function unlock() {
+        sessionStorage.setItem('wr_unlocked', '1');
+        overlay.style.transition = 'opacity 0.3s';
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 320);
+      }
+
+      if (mode === 'set') setMsg('Set your 4-digit PIN');
+      else               setMsg('Enter PIN');
+
+      async function handleDigit(d) {
+        if (entry.length >= 4) return;
+        entry += d;
+        updateDots();
+        if (entry.length < 4) return;
+
+        if (mode === 'set') {
+          if (!firstPin) {
+            firstPin = entry;
+            entry = '';
+            updateDots();
+            setMsg('Confirm your PIN');
+          } else if (entry === firstPin) {
+            const hash = await hashPin(entry);
+            localStorage.setItem('wr_pin_hash', hash);
+            setMsg('PIN set!');
+            setTimeout(unlock, 400);
+          } else {
+            shake();
+            entry = ''; firstPin = '';
+            updateDots();
+            setMsg('PINs didn\'t match — try again');
+          }
+        } else {
+          const hash    = await hashPin(entry);
+          const stored  = localStorage.getItem('wr_pin_hash');
+          if (hash === stored) {
+            unlock();
+          } else {
+            shake();
+            entry = '';
+            updateDots();
+            setMsg('Incorrect PIN');
+            setTimeout(() => setMsg('Enter PIN'), 1200);
+          }
+        }
+      }
+
+      function handleBack() {
+        entry = entry.slice(0, -1);
+        updateDots();
+      }
+
+      // Numpad clicks
+      document.querySelectorAll('.pin-key[data-digit]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const d = btn.dataset.digit;
+          if (d === 'back') handleBack();
+          else handleDigit(d);
+        });
+      });
+
+      // Keyboard input
+      document.addEventListener('keydown', function onKey(e) {
+        if (!document.getElementById('pin-overlay')) {
+          document.removeEventListener('keydown', onKey);
+          return;
+        }
+        if (/^[0-9]$/.test(e.key)) handleDigit(e.key);
+        else if (e.key === 'Backspace') handleBack();
+      });
+    }
+
+    initPinLock();
   </script>
 </body>
 </html>
