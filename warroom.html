@@ -1870,6 +1870,7 @@
       miniCalMonth = new Date().getMonth();
       renderMiniCalendar();
       renderDaysUntil();
+      initWeather();
     }
 
     /* ══════════════════════════════════════
@@ -2389,6 +2390,148 @@
     }
 
     initPinLock();
+
+    /* ══════════════════════════════════════
+       WEATHER WIDGET
+    ══════════════════════════════════════ */
+
+    const WMO_EMOJI = {
+      0:'☀️',1:'🌤',2:'⛅',3:'☁️',
+      45:'🌫',48:'🌫',
+      51:'🌦',53:'🌦',55:'🌧',
+      61:'🌧',63:'🌧',65:'🌧',
+      71:'❄️',73:'❄️',75:'❄️',77:'❄️',
+      80:'🌦',81:'🌦',82:'⛈',
+      85:'❄️',86:'❄️',
+      95:'⛈',96:'⛈',99:'⛈'
+    };
+
+    function wmoEmoji(code) {
+      return WMO_EMOJI[code] || '🌡';
+    }
+
+    let weatherRefreshTimer = null;
+
+    function initWeather() {
+      const input = document.getElementById('weather-city-input');
+      if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') addWeatherLocation(); });
+      renderWeather();
+      clearInterval(weatherRefreshTimer);
+      weatherRefreshTimer = setInterval(renderWeather, 30 * 60 * 1000);
+    }
+
+    async function addWeatherLocation() {
+      const input    = document.getElementById('weather-city-input');
+      const errorEl  = document.getElementById('weather-add-error');
+      const city     = input.value.trim();
+      if (!city) return;
+
+      const locations = Store.get('wr_weather_locations', []);
+      if (locations.length >= 5) {
+        errorEl.textContent = 'Maximum 5 locations.';
+        errorEl.style.display = '';
+        return;
+      }
+
+      const btn = document.getElementById('weather-add-btn');
+      btn.textContent = '…'; btn.disabled = true;
+      errorEl.style.display = 'none';
+
+      try {
+        const geoRes = await fetch(
+          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
+        );
+        const geoData = await geoRes.json();
+        if (!geoData.results?.length) throw new Error('City not found');
+        const { name, latitude: lat, longitude: lon } = geoData.results[0];
+        locations.push({ name, lat, lon });
+        Store.set('wr_weather_locations', locations);
+        input.value = '';
+        renderWeather();
+      } catch (err) {
+        errorEl.textContent = err.message === 'City not found'
+          ? 'City not found — try a different spelling.'
+          : 'Could not reach geocoding service.';
+        errorEl.style.display = '';
+      } finally {
+        btn.textContent = '+ Add'; btn.disabled = false;
+      }
+    }
+
+    function removeWeatherLocation(idx) {
+      const locations = Store.get('wr_weather_locations', []);
+      locations.splice(idx, 1);
+      Store.set('wr_weather_locations', locations);
+      renderWeather();
+    }
+
+    async function fetchWeatherFor(lat, lon) {
+      // Use raw localStorage for cache — weather data shouldn't sync to Supabase
+      const cacheKey = `wr_weather_cache_${lat}_${lon}`;
+      try {
+        const cached = JSON.parse(localStorage.getItem(cacheKey));
+        if (cached && (Date.now() - cached.fetchedAt) < 30 * 60 * 1000) return cached.data;
+      } catch {}
+
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto`;
+      const res  = await fetch(url);
+      if (!res.ok) throw new Error('Weather fetch failed');
+      const data = await res.json();
+      try { localStorage.setItem(cacheKey, JSON.stringify({ data, fetchedAt: Date.now() })); } catch {}
+      return data;
+    }
+
+    async function renderWeather() {
+      const list    = document.getElementById('weather-list');
+      const addRow  = document.getElementById('weather-add-row');
+      if (!list) return;
+
+      const locations = Store.get('wr_weather_locations', []);
+
+      if (addRow) addRow.style.display = locations.length >= 5 ? 'none' : '';
+
+      if (!locations.length) {
+        list.innerHTML = '<p style="font-size:12px;color:var(--text3)">No locations added.</p>';
+        return;
+      }
+
+      // Show skeletons while loading
+      list.innerHTML = locations.map(() => `
+        <div class="weather-card">
+          <div class="skel-line" style="width:24px;height:24px;border-radius:50%;flex-shrink:0"></div>
+          <div style="flex:1"><div class="skel-line" style="width:60%"></div><div class="skel-line short"></div></div>
+        </div>`).join('');
+
+      const results = await Promise.allSettled(
+        locations.map(loc => fetchWeatherFor(loc.lat, loc.lon))
+      );
+
+      list.innerHTML = locations.map((loc, i) => {
+        const result = results[i];
+        if (result.status === 'rejected') {
+          return `<div class="weather-card">
+            <span class="weather-icon">❓</span>
+            <div class="weather-info"><div class="weather-city">${escHtml(loc.name)}</div>
+            <div class="weather-hilo" style="color:var(--danger)">Unable to load</div></div>
+            <button class="weather-remove" onclick="removeWeatherLocation(${i})" title="Remove">×</button>
+          </div>`;
+        }
+        const d    = result.value;
+        const temp = Math.round(d.current.temperature_2m);
+        const code = d.current.weathercode;
+        const hi   = Math.round(d.daily.temperature_2m_max[0]);
+        const lo   = Math.round(d.daily.temperature_2m_min[0]);
+        return `<div class="weather-card">
+          <span class="weather-icon">${wmoEmoji(code)}</span>
+          <div class="weather-info">
+            <div class="weather-city">${escHtml(loc.name)}</div>
+            <div class="weather-temp">${temp}°C</div>
+            <div class="weather-hilo">Lo ${lo}° / Hi ${hi}°</div>
+          </div>
+          <button class="weather-remove" onclick="removeWeatherLocation(${i})" title="Remove">×</button>
+        </div>`;
+      }).join('');
+    }
   </script>
 </body>
 </html>
