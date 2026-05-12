@@ -1032,7 +1032,7 @@
     function renderSection(tab) {
       const fns = { tasks: renderTasks, watchlist: renderWatchlist,
                     calendar: renderCalendar, notes: renderNotes,
-                    habits: renderHabits, links: renderLinks };
+                    links: renderLinks };
       if (fns[tab]) fns[tab]();
     }
 
@@ -1637,89 +1637,6 @@
     function stopNewsRefresh() {
       clearInterval(newsRefreshTimer);
       newsRefreshTimer = null;
-    }
-
-    /* ══════════════════════════════════════
-       HABITS
-    ══════════════════════════════════════ */
-
-    function last7Days() {
-      return Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const hi = document.getElementById('habit-input');
-      if (hi) hi.addEventListener('keydown', e => { if (e.key === 'Enter') addHabit(); });
-    });
-
-    function addHabit() {
-      const input = document.getElementById('habit-input');
-      const name  = input.value.trim();
-      if (!name) return;
-      const habits = Store.get('wr_habits', []);
-      habits.push({ id: uid(), name });
-      Store.set('wr_habits', habits);
-      input.value = '';
-      renderHabits();
-    }
-
-    function toggleHabit(id) {
-      const today       = todayStr();
-      const completions = Store.get('wr_completions', {});
-      if (!completions[today]) completions[today] = [];
-      const idx = completions[today].indexOf(id);
-      if (idx === -1) completions[today].push(id);
-      else completions[today].splice(idx, 1);
-      Store.set('wr_completions', completions);
-      renderHabits();
-    }
-
-    function deleteHabit(id) {
-      Store.set('wr_habits', Store.get('wr_habits', []).filter(h => h.id !== id));
-      renderHabits();
-    }
-
-    function renderHabits() {
-      const habits      = Store.get('wr_habits', []);
-      const completions = Store.get('wr_completions', {});
-      const today       = todayStr();
-      const days        = last7Days();
-      const todayDone   = (completions[today] || []);
-      const list  = document.getElementById('habits-list');
-      const empty = document.getElementById('habits-empty');
-      const sumEl = document.getElementById('habits-summary');
-      sumEl.textContent = habits.length
-        ? `${todayDone.length} of ${habits.length} done today`
-        : '';
-      if (!habits.length) { list.innerHTML = ''; empty.style.display = ''; return; }
-      empty.style.display = 'none';
-      list.innerHTML = habits.map(h => {
-        const isDone = todayDone.includes(h.id);
-        const dots   = days.map(day => {
-          const done = (completions[day] || []).includes(h.id);
-          return `<div class="habit-dot${done ? '' : ' empty'}" title="${day}"></div>`;
-        }).join('');
-        return `
-          <div class="habit-row">
-            <div class="habit-check${isDone ? ' done' : ''}" onclick="toggleHabit('${h.id}')"></div>
-            <span class="habit-name">${escHtml(h.name)}</span>
-            <div class="habit-dots">${dots}</div>
-            <button class="habit-del" onclick="deleteHabit('${h.id}')">×</button>
-          </div>`;
-      }).join('');
-    }
-
-    function getHabitsSummary() {
-      const habits      = Store.get('wr_habits', []);
-      const completions = Store.get('wr_completions', {});
-      const today       = todayStr();
-      const done        = (completions[today] || []).length;
-      if (!habits.length) return [{ text: 'No habits set', urgent: false }];
-      return [{ text: `${done} of ${habits.length} done today`, urgent: false }];
     }
 
     /* ══════════════════════════════════════
