@@ -944,7 +944,7 @@
 <body>
 
   <!-- PIN Lock Overlay -->
-  <div id="pin-overlay">
+  <div id="pin-overlay" class="hidden">
     <div id="pin-logo">⚔️ WAR ROOM</div>
     <div id="pin-dots">
       <div class="pin-dot" id="pd0"></div>
@@ -2121,6 +2121,7 @@
       }
 
       const overlay  = document.getElementById('pin-overlay');
+      overlay.classList.remove('hidden'); // reveal overlay now that JS has confirmed a PIN is needed
       const dotsEls  = [0,1,2,3].map(i => document.getElementById(`pd${i}`));
       const msgEl    = document.getElementById('pin-message');
       let entry      = '';
@@ -2159,6 +2160,7 @@
             setMsg('Confirm your PIN');
           } else if (entry === firstPin) {
             const hash = await hashPin(entry);
+            // wr_pin_hash is intentionally device-local — bypass Store.set to keep PIN out of Supabase
             localStorage.setItem('wr_pin_hash', hash);
             setMsg('PIN set!');
             setTimeout(unlock, 400);
