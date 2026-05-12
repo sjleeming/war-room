@@ -2282,14 +2282,15 @@
        PIN LOCK SCREEN
     ══════════════════════════════════════ */
 
-    async function hashPin(pin) {
-      const buf = await crypto.subtle.digest(
-        'SHA-256',
-        new TextEncoder().encode(pin)
-      );
-      return Array.from(new Uint8Array(buf))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
+    function hashPin(pin) {
+      // Synchronous hash — crypto.subtle is unavailable on file:// in Chrome
+      const s = 'wr2026:' + pin;
+      let h = 5381;
+      for (let i = 0; i < s.length; i++) {
+        h = ((h << 5) + h) ^ s.charCodeAt(i);
+        h = h >>> 0;
+      }
+      return h.toString(16) + ':' + btoa(s).replace(/=/g, '');
     }
 
     function initPinLock() {
@@ -2325,7 +2326,7 @@
       if (mode === 'set') setMsg('Set your 4-digit PIN');
       else               setMsg('Enter PIN');
 
-      async function handleDigit(d) {
+      function handleDigit(d) {
         if (entry.length >= 4) return;
         entry += d;
         updateDots();
@@ -2338,7 +2339,7 @@
             updateDots();
             setMsg('Confirm your PIN');
           } else if (entry === firstPin) {
-            const hash = await hashPin(entry);
+            const hash = hashPin(entry);
             // wr_pin_hash is intentionally device-local — bypass Store.set to keep PIN out of Supabase
             localStorage.setItem('wr_pin_hash', hash);
             setMsg('PIN set!');
@@ -2350,7 +2351,7 @@
             setMsg('PINs didn\'t match — try again');
           }
         } else {
-          const hash    = await hashPin(entry);
+          const hash    = hashPin(entry);
           const stored  = localStorage.getItem('wr_pin_hash');
           if (hash === stored) {
             unlock();
