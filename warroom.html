@@ -596,33 +596,6 @@
     .cal-event-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 15px; }
     .cal-event-del:hover { color: var(--danger); }
 
-    /* ── Habits ── */
-    #habits-add-row { display: flex; gap: 8px; margin-bottom: 16px; }
-    #habits-add-row .input { flex: 1; }
-    #habits-summary { font-size: 13px; color: var(--text3); margin-bottom: 14px; }
-    .habit-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 14px; background: var(--surface);
-      border-radius: 8px; margin-bottom: 6px;
-    }
-    .habit-check {
-      width: 20px; height: 20px; border: 2px solid var(--border2);
-      border-radius: 6px; cursor: pointer; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .habit-check.done { background: var(--green); border-color: var(--green); }
-    .habit-check.done::after { content: '✓'; color: #fff; font-size: 12px; }
-    .habit-name { flex: 1; font-size: 14px; }
-    .habit-dots { display: flex; gap: 4px; }
-    .habit-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--green);
-    }
-    .habit-dot.empty { background: none; border: 1.5px solid var(--border2); }
-    .habit-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; }
-    .habit-del:hover { color: var(--danger); }
-
     /* ── Notes ── */
     #notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
     .note-card {
@@ -831,7 +804,6 @@
       <div class="tab" data-tab="watchlist"><span class="tab-icon">👁</span><span class="tab-label"> Watchlist</span></div>
       <div class="tab" data-tab="calendar"><span class="tab-icon">📅</span><span class="tab-label"> Calendar</span></div>
       <div class="tab" data-tab="notes"><span class="tab-icon">📝</span><span class="tab-label"> Notes</span></div>
-      <div class="tab" data-tab="habits"><span class="tab-icon">⬜</span><span class="tab-label"> Habits</span></div>
       <div class="tab" data-tab="links"><span class="tab-icon">🔗</span><span class="tab-label"> Links</span></div>
       <div class="tab" data-tab="markets"><span class="tab-icon">📈</span><span class="tab-label"> Markets</span></div>
     </div>
@@ -944,16 +916,6 @@
       <textarea id="note-body-input" placeholder="Start writing…"></textarea>
       <div id="note-autosave">Auto-saved</div>
     </div>
-  </div>
-  <div class="section" id="section-habits">
-    <h2 class="section-heading">Habits</h2>
-    <div id="habits-add-row">
-      <input class="input" id="habit-input" placeholder="New habit name…" />
-      <button class="btn btn-primary" onclick="addHabit()">Add</button>
-    </div>
-    <div id="habits-summary"></div>
-    <div id="habits-list"></div>
-    <p id="habits-empty" style="color:var(--text3);display:none">No habits added yet.</p>
   </div>
   <div class="section" id="section-links">
     <h2 class="section-heading">Links</h2>
