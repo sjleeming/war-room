@@ -1824,6 +1824,56 @@
       miniCalYear  = new Date().getFullYear();
       miniCalMonth = new Date().getMonth();
       renderMiniCalendar();
+      renderDaysUntil();
+    }
+
+    /* ══════════════════════════════════════
+       DAYS UNTIL WIDGET
+    ══════════════════════════════════════ */
+
+    function renderDaysUntil() {
+      const list    = document.getElementById('days-until-list');
+      const empty   = document.getElementById('days-until-empty');
+      if (!list) return;
+
+      const events  = Store.get('wr_calevents', {});
+      const today   = new Date(); today.setHours(0,0,0,0);
+      const upcoming = [];
+
+      Object.entries(events).forEach(([dateStr, evs]) => {
+        const date = new Date(dateStr + 'T00:00:00');
+        if (date < today) return;
+        evs.forEach(ev => {
+          if (!ev.isMajor) return;
+          const days = Math.round((date - today) / 86400000);
+          upcoming.push({ name: ev.text, emoji: ev.emoji || '📅', days, date });
+        });
+      });
+
+      upcoming.sort((a, b) => a.days - b.days);
+      const visible = upcoming.slice(0, 8);
+
+      if (!visible.length) {
+        list.innerHTML = '';
+        empty.style.display = '';
+        return;
+      }
+      empty.style.display = 'none';
+
+      list.innerHTML = visible.map(ev => {
+        const label = ev.days === 0 ? 'TODAY'
+                    : ev.days === 1 ? 'TOMORROW'
+                    : `${ev.days}d`;
+        const urgency = ev.days === 0 ? 'urgent-now'
+                      : ev.days <= 7  ? 'urgent-soon'
+                      : '';
+        return `
+          <div class="days-until-card ${urgency}">
+            <span class="days-until-emoji">${escHtml(ev.emoji)}</span>
+            <span class="days-until-name">${escHtml(ev.name)}</span>
+            <span class="days-until-count">${label}</span>
+          </div>`;
+      }).join('');
     }
 
     /* ══════════════════════════════════════
