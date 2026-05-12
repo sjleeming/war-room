@@ -1854,20 +1854,24 @@
       return val.toLocaleString('en-US', { maximumFractionDigits: 2 });
     }
 
+    async function fetchOneTicker(ticker) {
+      const yUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker.symbol)}?range=1d&interval=1d`;
+      const proxy = `https://corsproxy.io/?${encodeURIComponent(yUrl)}`;
+      const res   = await fetchWithTimeout(proxy);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data  = await res.json();
+      const meta  = data.chart.result[0].meta;
+      const price = meta.regularMarketPrice;
+      const prev  = meta.chartPreviousClose ?? meta.previousClose ?? price;
+      return { id: ticker.id, price, change: price - prev, pct: ((price - prev) / prev) * 100 };
+    }
+
     async function fetchYahooMarkets() {
       const nonCrypto = TICKERS.filter(t => t.fmt !== 'crypto');
-      const symbols   = nonCrypto.map(t => t.symbol).join(',');
-      const yUrl      = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}`;
-      const proxy     = `https://api.allorigins.win/get?url=${encodeURIComponent(yUrl)}`;
-      const res       = await fetchWithTimeout(proxy);
-      const outer     = await res.json();
-      const data      = JSON.parse(outer.contents);
-      return data.quoteResponse.result.map(q => ({
-        id:     TICKERS.find(t => t.symbol === q.symbol)?.id,
-        price:  q.regularMarketPrice,
-        change: q.regularMarketChange,
-        pct:    q.regularMarketChangePercent,
-      })).filter(t => t.id);
+      const results   = await Promise.allSettled(nonCrypto.map(t => fetchOneTicker(t)));
+      return results
+        .filter(r => { if (r.status === 'rejected') console.warn('Ticker fetch failed:', r.reason); return r.status === 'fulfilled'; })
+        .map(r => r.value);
     }
 
     async function fetchCryptoMarkets() {
