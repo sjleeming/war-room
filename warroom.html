@@ -2411,13 +2411,19 @@
     }
 
     let weatherRefreshTimer = null;
+    let weatherKeyListenerAttached = false;
 
     function initWeather() {
-      const input = document.getElementById('weather-city-input');
-      if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') addWeatherLocation(); });
-      renderWeather();
+      if (!weatherKeyListenerAttached) {
+        const input = document.getElementById('weather-city-input');
+        if (input) {
+          input.addEventListener('keydown', e => { if (e.key === 'Enter') addWeatherLocation(); });
+          weatherKeyListenerAttached = true;
+        }
+      }
       clearInterval(weatherRefreshTimer);
       weatherRefreshTimer = setInterval(renderWeather, 30 * 60 * 1000);
+      renderWeather();
     }
 
     async function addWeatherLocation() {
@@ -2427,6 +2433,11 @@
       if (!city) return;
 
       const locations = Store.get('wr_weather_locations', []);
+      if (locations.some(l => l.name.toLowerCase() === city.toLowerCase())) {
+        errorEl.textContent = 'That location is already added.';
+        errorEl.style.display = '';
+        return;
+      }
       if (locations.length >= 5) {
         errorEl.textContent = 'Maximum 5 locations.';
         errorEl.style.display = '';
@@ -2441,6 +2452,7 @@
         const geoRes = await fetch(
           `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
         );
+        if (!geoRes.ok) throw new Error('Could not reach geocoding service.');
         const geoData = await geoRes.json();
         if (!geoData.results?.length) throw new Error('City not found');
         const { name, latitude: lat, longitude: lon } = geoData.results[0];
