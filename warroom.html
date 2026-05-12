@@ -1079,7 +1079,22 @@
       <div id="cal-event-date"></div>
       <div id="cal-event-add">
         <input class="input" id="cal-event-input" placeholder="Add event or note…" />
-        <button class="btn btn-primary" onclick="addCalEvent()">Add</button>
+        <div id="cal-event-meta" style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+          <div id="cal-major-toggle" style="display:flex;gap:4px">
+            <button id="cal-btn-minor" class="btn btn-ghost" style="font-size:12px;padding:5px 10px;background:var(--accent);color:#fff" onclick="setCalMajor(false)">Minor</button>
+            <button id="cal-btn-major" class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="setCalMajor(true)">★ Major</button>
+          </div>
+          <div id="cal-emoji-picker" style="display:none;gap:6px;align-items:center">
+            <span style="font-size:11px;color:var(--text3)">Emoji:</span>
+            <span class="cal-emoji-opt" data-e="🎂" onclick="pickCalEmoji(this)" style="cursor:pointer;font-size:18px" title="Birthday">🎂</span>
+            <span class="cal-emoji-opt" data-e="🎉" onclick="pickCalEmoji(this)" style="cursor:pointer;font-size:18px" title="Celebration">🎉</span>
+            <span class="cal-emoji-opt" data-e="✈️" onclick="pickCalEmoji(this)" style="cursor:pointer;font-size:18px" title="Travel">✈️</span>
+            <span class="cal-emoji-opt" data-e="🎓" onclick="pickCalEmoji(this)" style="cursor:pointer;font-size:18px" title="Education">🎓</span>
+            <span class="cal-emoji-opt" data-e="💼" onclick="pickCalEmoji(this)" style="cursor:pointer;font-size:18px" title="Work">💼</span>
+            <span class="cal-emoji-opt" data-e="📅" onclick="pickCalEmoji(this)" style="cursor:pointer;font-size:18px" title="General">📅</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:8px" onclick="addCalEvent()">Add</button>
       </div>
       <div id="cal-event-list"></div>
     </div>
@@ -1380,6 +1395,31 @@
     ══════════════════════════════════════ */
 
     let calYear, calMonth, calSelected;
+    let calEventIsMajor = false;
+    let calEventEmoji   = '📅';
+
+    function setCalMajor(major) {
+      calEventIsMajor = major;
+      const minorBtn = document.getElementById('cal-btn-minor');
+      const majorBtn = document.getElementById('cal-btn-major');
+      const picker   = document.getElementById('cal-emoji-picker');
+      if (!minorBtn || !majorBtn || !picker) return;
+      minorBtn.style.background = major ? '' : 'var(--accent)';
+      minorBtn.style.color      = major ? '' : '#fff';
+      majorBtn.style.background = major ? 'var(--purple)' : '';
+      majorBtn.style.color      = major ? '#fff' : '';
+      picker.style.display      = major ? 'flex' : 'none';
+    }
+
+    function pickCalEmoji(el) {
+      calEventEmoji = el.dataset.e;
+      document.querySelectorAll('.cal-emoji-opt').forEach(e => {
+        e.style.outline      = 'none';
+        e.style.borderRadius = '';
+      });
+      el.style.outline      = '2px solid var(--accent)';
+      el.style.borderRadius = '4px';
+    }
 
     function calInit() {
       const now = new Date();
@@ -1459,6 +1499,7 @@
       document.getElementById('cal-event-list').innerHTML = list.length
         ? list.map(ev => `
             <div class="cal-event-item">
+              ${ev.isMajor ? `<span style="margin-right:4px">${escHtml(ev.emoji || '📅')}</span>` : ''}
               <span class="cal-event-text">${escHtml(ev.text)}</span>
               <button class="cal-event-del" onclick="deleteCalEvent('${ev.id}')">×</button>
             </div>`).join('')
@@ -1472,7 +1513,15 @@
       if (!text || !calSelected) return;
       const events = Store.get('wr_calevents', {});
       if (!events[calSelected]) events[calSelected] = [];
-      events[calSelected].push({ id: uid(), text });
+      events[calSelected].push({
+        id: uid(),
+        text,
+        isMajor: calEventIsMajor,
+        emoji: calEventIsMajor ? calEventEmoji : '📅'
+      });
+      calEventIsMajor = false;
+      calEventEmoji   = '📅';
+      setCalMajor(false);
       Store.set('wr_calevents', events);
       input.value = '';
       renderCalendar();
