@@ -1952,6 +1952,66 @@
     }
 
     /* ══════════════════════════════════════
+       MINI CALENDAR (HOME)
+    ══════════════════════════════════════ */
+    let miniCalYear  = new Date().getFullYear();
+    let miniCalMonth = new Date().getMonth();
+
+    function miniCalPrev() {
+      miniCalMonth--;
+      if (miniCalMonth < 0) { miniCalMonth = 11; miniCalYear--; }
+      renderMiniCalendar();
+    }
+
+    function miniCalNext() {
+      miniCalMonth++;
+      if (miniCalMonth > 11) { miniCalMonth = 0; miniCalYear++; }
+      renderMiniCalendar();
+    }
+
+    function renderMiniCalendar() {
+      const container = document.getElementById('home-mini-cal');
+      if (!container) return;
+
+      const events      = Store.get('wr_calevents', {});
+      const today       = todayStr();
+      const label       = new Date(miniCalYear, miniCalMonth, 1)
+        .toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+      const firstDay    = new Date(miniCalYear, miniCalMonth, 1).getDay();
+      const offset      = (firstDay + 6) % 7;
+      const daysInMonth = new Date(miniCalYear, miniCalMonth + 1, 0).getDate();
+      const prevDays    = new Date(miniCalYear, miniCalMonth, 0).getDate();
+
+      const DAYS = ['M','T','W','T','F','S','S'];
+      let daysHtml = DAYS.map(d => `<div class="mini-cal-dow">${d}</div>`).join('');
+
+      for (let i = offset - 1; i >= 0; i--) {
+        daysHtml += `<div class="mini-cal-day other-month">${prevDays - i}</div>`;
+      }
+      for (let d = 1; d <= daysInMonth; d++) {
+        const key       = `${miniCalYear}-${String(miniCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const isToday   = key === today;
+        const hasEvents = events[key] && events[key].length > 0;
+        daysHtml += `<div class="mini-cal-day${isToday ? ' today' : ''}${hasEvents ? ' has-event' : ''}" onclick="navigate('calendar')">${d}</div>`;
+      }
+      const total     = offset + daysInMonth;
+      const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+      for (let d = 1; d <= remaining; d++) {
+        daysHtml += `<div class="mini-cal-day other-month">${d}</div>`;
+      }
+
+      container.innerHTML = `
+        <div class="mini-cal-section-label">Calendar</div>
+        <div class="mini-cal-header">
+          <button class="mini-cal-nav-btn" onclick="event.stopPropagation();miniCalPrev()">‹</button>
+          <span class="mini-cal-month-label">${label}</span>
+          <button class="mini-cal-nav-btn" onclick="event.stopPropagation();miniCalNext()">›</button>
+        </div>
+        <div class="mini-cal-grid">${daysHtml}</div>
+      `;
+    }
+
+    /* ══════════════════════════════════════
        INIT
     ══════════════════════════════════════ */
     runMorningCheckin();
