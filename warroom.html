@@ -1631,15 +1631,11 @@
       // Daily focus strip
       const focusStrip = document.getElementById('home-focus-strip');
       if (focusStrip) {
-        const activeTasks  = Store.get('wr_todos', []).filter(t => !t.done).length;
-        const habits       = Store.get('wr_habits', []);
-        const completions  = Store.get('wr_completions', {});
-        const habitsDone   = (completions[todayStr()] || []).length;
-        const todayEvents  = (Store.get('wr_calevents', {})[todayStr()] || []).length;
+        const activeTasks = Store.get('wr_todos', []).filter(t => !t.done).length;
+        const todayEvents = (Store.get('wr_calevents', {})[todayStr()] || []).length;
         const pills = [];
-        if (activeTasks)   pills.push(`${activeTasks} task${activeTasks !== 1 ? 's' : ''}`);
-        if (habits.length) pills.push(`${habitsDone}/${habits.length} habits`);
-        if (todayEvents)   pills.push(`${todayEvents} event${todayEvents !== 1 ? 's' : ''} today`);
+        if (activeTasks) pills.push(`${activeTasks} task${activeTasks !== 1 ? 's' : ''}`);
+        if (todayEvents) pills.push(`${todayEvents} event${todayEvents !== 1 ? 's' : ''} today`);
         focusStrip.innerHTML = pills.length
           ? pills.map(p => `<span class="focus-pill">${p}</span>`).join('')
           : '<span class="focus-pill">All clear ✓</span>';
@@ -1647,17 +1643,12 @@
 
       const grid = document.getElementById('home-grid');
       const cards = [
-        { tab: 'tasks',     label: 'Tasks',     color: 'var(--blue)',   items: getTaskSummary()     },
-        { tab: 'watchlist', label: 'Watchlist',  color: 'var(--purple)', items: getWatchSummary()    },
-        { tab: 'calendar',  label: 'Calendar',   color: 'var(--teal)',   items: getCalSummary()      },
-        { tab: 'notes',     label: 'Notes',      color: 'var(--amber)',  items: getNotesSummary()    },
-        { tab: 'habits',    label: 'Habits',     color: 'var(--green)',  items: getHabitsSummary()   },
-        { tab: 'links',     label: 'Links',      color: 'var(--coral)',  items: getLinksSummary()    },
+        { tab: 'tasks',     label: 'Tasks',     color: 'var(--blue)',   items: getTaskSummary()  },
+        { tab: 'watchlist', label: 'Watchlist',  color: 'var(--purple)', items: getWatchSummary() },
+        { tab: 'notes',     label: 'Notes',      color: 'var(--amber)',  items: getNotesSummary() },
+        { tab: 'links',     label: 'Links',      color: 'var(--coral)',  items: getLinksSummary() },
       ];
-      const CARD_ICONS = {
-        tasks: '✓', watchlist: '👁', calendar: '📅',
-        notes: '📝', habits: '⬜', links: '🔗'
-      };
+      const CARD_ICONS = { tasks: '✓', watchlist: '👁', notes: '📝', links: '🔗' };
       grid.innerHTML = cards.map(c => `
         <div class="home-card" style="border-left-color:${c.color}" onclick="navigate('${c.tab}')">
           <div class="home-card-header" style="color:${c.color}">
@@ -1672,6 +1663,10 @@
           </div>
         </div>
       `).join('');
+
+      miniCalYear  = new Date().getFullYear();
+      miniCalMonth = new Date().getMonth();
+      renderMiniCalendar();
     }
 
     /* ══════════════════════════════════════
