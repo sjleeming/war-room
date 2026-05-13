@@ -2270,6 +2270,9 @@
     /* ══════════════════════════════════════
        INIT
     ══════════════════════════════════════ */
+    let weatherRefreshTimer = null;
+    let weatherKeyListenerAttached = false;
+
     runMorningCheckin();
     navigate('home');
     initThemeSwatches();
@@ -2410,9 +2413,6 @@
     function wmoEmoji(code) {
       return WMO_EMOJI[code] || '🌡';
     }
-
-    let weatherRefreshTimer = null;
-    let weatherKeyListenerAttached = false;
 
     function initWeather() {
       if (!weatherKeyListenerAttached) {
